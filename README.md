@@ -17,7 +17,7 @@ cd Marcos-CaseVault
 ```bash
 cd frontend
 npm install
-npm start           # Run app locally
+npm run dev           # Run app locally
 ```
 
 ### Backend Setup (Python + AWS Lambda)
@@ -37,5 +37,5 @@ backend/requirements.txt → Python libraries (e.g. boto3, psycopg2-binary)
 frontend/package.json → Node dependencies
 
 ### Running Locally
-Frontend: `npm start`
+Frontend: `npm run dev`
 Backend: test locally with `uvicorn` or AWS SAM
