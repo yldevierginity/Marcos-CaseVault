@@ -1,0 +1,15 @@
+# AWS SDK for Python
+boto3==1.34.0
+
+# PostgreSQL driver (binary version - works well on Lambda)
+psycopg2-binary==2.9.9
+
+# HTTP requests module
+requests==2.32.3
+
+# JSON schema validation (optional but useful for Lambda inputs)
+jsonschema==4.23.0
+
+# AWS Lambda Powertools for Python (logging, tracing, metrics)
+aws-lambda-powertools==2.33.0
+
