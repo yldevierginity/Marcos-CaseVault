@@ -166,13 +166,19 @@ export function AboutPage() {
                 <h3 className="font-semibold mb-1">Yldevier John Magpusao</h3>
                 <p className="text-sm text-muted-foreground mb-3">Lead Developer</p>
                 <div className="space-y-1 text-sm w-full">
-                  <div className="flex items-center justify-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">yamagpusao@up.edu.ph</span>
+                  <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">yamagpusao@up.edu.ph</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground mb-1">yldeviermagpusao@gmail.com</span>
+                        </div>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">+63 5555</span>
+                    <span className="text-muted-foreground">+63 915 611 3130</span>
                   </div>
                 </div>
               </div>
@@ -190,13 +196,19 @@ export function AboutPage() {
                 <h3 className="font-semibold mb-1">Andrew Jerick B. Mante</h3>
                 <p className="text-sm text-muted-foreground mb-3">Frontend Developer</p>
                 <div className="space-y-1 text-sm w-full">
-                  <div className="flex items-center justify-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">abmante@up.edu.ph</span>
+                  <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">abmante@up.edu.ph</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground mb-1">ajbm092904@gmail.com</span>
+                        </div>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">+63 4564564</span>
+                    <span className="text-muted-foreground">+63 915 611 3130</span>
                   </div>
                 </div>
               </div>
@@ -214,13 +226,19 @@ export function AboutPage() {
                 <h3 className="font-semibold mb-1">Carl Raymund P. Suello</h3>
                 <p className="text-sm text-muted-foreground mb-3">UI/UX Designer</p>
                 <div className="space-y-1 text-sm w-full">
-                  <div className="flex items-center justify-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">cpsuello@up.edu.ph</span>
+                 <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">cpsuello@up.edu.ph</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground mb-1">carlsuello14@gmail.com</span>
+                        </div>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">+63 11111</span>
+                    <span className="text-muted-foreground">+63 998 253 8670</span>
                   </div>
                 </div>
               </div>
@@ -278,7 +296,7 @@ export function AboutPage() {
               <p className="text-sm text-muted-foreground">
                 &copy; 2025 NMMJ Law Office Database System
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground">
                 Version 1.0.0 | Dura lex, sed lex.
               </p>
             </div>
