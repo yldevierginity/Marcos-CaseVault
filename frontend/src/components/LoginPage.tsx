@@ -28,7 +28,7 @@ export function LoginPage({ onLogin, onForgotPassword }: LoginPageProps) {
               <Scale className="w-12 h-12 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle>Legal Partners & Associates</CardTitle>
+          <CardTitle>Neyra Marcos Mendez Law Office</CardTitle>
           <CardDescription>
             Sign in to access your case management dashboard
           </CardDescription>
