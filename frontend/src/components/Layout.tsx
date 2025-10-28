@@ -57,28 +57,27 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Scale className="w-6 h-6" />
-                <h3>Legal Partners & Associates</h3>
+                <h3>Neyra Marcos Mendez Law Office</h3>
               </div>
               <p className="text-sm opacity-90">
-                Providing exceptional legal services since 2005.
+                Providing exceptional legal services since 2011.
               </p>
             </div>
             <div>
-              <h3 className="mb-4">Contact</h3>
-              <p className="text-sm opacity-90">123 Legal Street</p>
-              <p className="text-sm opacity-90">New York, NY 10001</p>
-              <p className="text-sm opacity-90">Phone: (555) 123-4567</p>
-              <p className="text-sm opacity-90">Email: info@legalpartners.com</p>
+              <h3 className="mb-4">Contact Us</h3>
+              <p className="text-sm opacity-90">Kumintang Street, Mintal</p>
+              <p className="text-sm opacity-90">Davao City 8000, Philippines</p>
+              <p className="text-sm opacity-90">Phone: (082) 291 5909</p>
+              <p className="text-sm opacity-90">Email: neyramarcoslawoffice@gmail.com</p>
             </div>
             <div>
               <h3 className="mb-4">Office Hours</h3>
-              <p className="text-sm opacity-90">Monday - Friday: 9:00 AM - 6:00 PM</p>
-              <p className="text-sm opacity-90">Saturday: 10:00 AM - 2:00 PM</p>
+              <p className="text-sm opacity-90">Monday - Saturday: 9:00 AM - 5:00 PM</p>
               <p className="text-sm opacity-90">Sunday: Closed</p>
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-8 pt-6 text-center text-sm opacity-90">
-            <p>&copy; 2025 Legal Partners & Associates. All rights reserved.</p>
+            <p>&copy; 2025 Neyra Marcos Mendez Law Office. All rights reserved.</p>
           </div>
         </div>
       </footer>
