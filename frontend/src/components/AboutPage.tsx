@@ -1,7 +1,7 @@
 import { Scale, Award, Users, Building2, Mail, Phone, MapPin, Code } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+// import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 export function AboutPage() {
   return (
@@ -27,7 +27,7 @@ export function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              Founded in 2005, Legal Partners & Associates has been at the
+              Founded in 2005, Neyra Marcos Mendez Jungco Law Office has been at the
               forefront of providing comprehensive legal services to individuals
               and businesses across the country. Our firm was built on the
               foundation of integrity, excellence, and unwavering commitment to
@@ -115,7 +115,7 @@ export function AboutPage() {
               <div>
                 <p className="font-medium">Address</p>
                 <p className="text-sm text-muted-foreground">
-                  123 Legal Street, New York, NY 10001
+                  Kumintang Street, Mintal, Davao City, Philippines
                 </p>
               </div>
             </div>
@@ -123,7 +123,7 @@ export function AboutPage() {
               <Phone className="w-5 h-5 text-primary" />
               <div>
                 <p className="font-medium">Phone</p>
-                <p className="text-sm text-muted-foreground">(555) 123-4567</p>
+                <p className="text-sm text-muted-foreground">(082) 291 5909</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export function AboutPage() {
               <div>
                 <p className="font-medium">Email</p>
                 <p className="text-sm text-muted-foreground">
-                  info@legalpartners.com
+                  neyramarcoslawoffice@gmail.com
                 </p>
               </div>
             </div>
@@ -149,9 +149,103 @@ export function AboutPage() {
           </div>
           <h2 className="mb-2">Developer Information</h2>
           <p className="text-sm text-muted-foreground">
-            This application was developed with modern web technologies
+            Meet the team behind this application
           </p>
         </div>
+
+        {/* Developer Profile */} 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Developer 1 */}
+          <Card className="bg-muted/30 border shadow-lg">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mb-4 overflow-hidden">
+                  {/* <Users className="w-12 h-12 text-muted-foreground" /> */}
+                  <img src="/ylde.jpg" alt="Developer Name" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-semibold mb-1">Yldevier John Magpusao</h3>
+                <p className="text-sm text-muted-foreground mb-3">Lead Developer</p>
+                <div className="space-y-1 text-sm w-full">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">yamagpusao@up.edu.ph</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground mb-1">yldeviermagpusao@gmail.com</span>
+                        </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">+63 915 611 3130</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Developer 2 */}
+          <Card className="bg-muted/30">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mb-4 overflow-hidden">
+                  {/* <Users className="w-12 h-12 text-muted-foreground" /> */}
+                  <img src="/drew.jpg" alt="Developer Name" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-semibold mb-1">Andrew Jerick B. Mante</h3>
+                <p className="text-sm text-muted-foreground mb-3">Frontend Developer</p>
+                <div className="space-y-1 text-sm w-full">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">abmante@up.edu.ph</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground mb-1">ajbm092904@gmail.com</span>
+                        </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">+63 915 611 3130</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Developer 3 */}
+          <Card className="bg-muted/30">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mb-4 overflow-hidden">
+                  {/* <Users className="w-12 h-12 text-muted-foreground" /> */}
+                  <img src="/carl.jpg" alt="Developer Name" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-semibold mb-1">Carl Raymund P. Suello</h3>
+                <p className="text-sm text-muted-foreground mb-3">UI/UX Designer</p>
+                <div className="space-y-1 text-sm w-full">
+                 <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">cpsuello@up.edu.ph</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground mb-1">carlsuello14@gmail.com</span>
+                        </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">+63 998 253 8670</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <Card className="bg-muted/30">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -200,10 +294,10 @@ export function AboutPage() {
             </div>
             <div className="mt-6 pt-6 border-t border-border text-center">
               <p className="text-sm text-muted-foreground">
-                &copy; 2025 Legal Partners & Associates Database System
+                &copy; 2025 NMMJ Law Office Database System
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Version 1.0.0 | Built with ❤️ for efficient case management
+              <p className="text-sm text-muted-foreground">
+                Version 1.0.0 | Dura lex, sed lex.
               </p>
             </div>
           </CardContent>
