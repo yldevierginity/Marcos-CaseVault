@@ -19,7 +19,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Scale className="w-8 h-8" />
-              <h1 className="text-xl">Legal Partners & Associates</h1>
+              <h1 className="text-xl">NMMJ LAW OFFICE</h1>
             </div>
             <div className="flex items-center gap-6">
               {navItems.map((item) => (
