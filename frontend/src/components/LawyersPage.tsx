@@ -1,6 +1,10 @@
 import { Users, Mail, Phone } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import Neyra from "./images/Neyra.jpg";
+import Marcos from "./images/Marcos.jpg";
+import Mendez from "./images/Mendez.jpg";
+import Jungco from "./images/Jungco.jpg";
 
 interface Lawyer {
   id: string;
@@ -20,7 +24,7 @@ const lawyers: Lawyer[] = [
     specialty: "Labor & Employment Law",
     email: "neyramarcoslawoffice@gmail.com",
     phone: "0939 928 1717",
-    image: "https://visscards.com/wp-content/uploads/2025/07/520982044_1552160548880264_8356160580350536972_n-1.jpg",
+    image: Neyra,
   },
   {
     id: "2",
@@ -29,7 +33,7 @@ const lawyers: Lawyer[] = [
     specialty: "Civil & Commercial Law",
     email: "neyramarcoslawoffice@gmail.com",
     phone: "(082) 291 5909",
-    image: "https://scontent.fdvo1-1.fna.fbcdn.net/v/t39.30808-6/486503239_10228900828450075_8650763127292178408_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=110&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeEjm5J_70pTaCf_j-VgoAfSyIZ2VSfPo-3IhnZVJ8-j7SdXsoCRH863sdiftTCIPDXWkO_N_bnPC-pimdtI_7uH&_nc_ohc=Z9t33dpTE_0Q7kNvwFSLwG1&_nc_oc=AdmYJyEIApTNLDj3_TKXoeZJGZiPdxsyPMSMGFv-Q0C7VyDdlkMqoCyedwcnHeyssVI&_nc_zt=23&_nc_ht=scontent.fdvo1-1.fna&_nc_gid=oufey_RQnX4O8z9c56qv3w&oh=00_AfdAL6e4sNXeaGVRRh6zF_jAWCYAQsIDFmKiLk1WlG8-ag&oe=68FFE829",
+    image: Marcos,
   },
   {
     id: "3",
@@ -38,7 +42,7 @@ const lawyers: Lawyer[] = [
     specialty: "Civil & Commercial Law",
     email: "neyramarcoslawoffice@gmail.com",
     phone: "0976 030 2266",
-    image: "https://scontent.fdvo1-2.fna.fbcdn.net/v/t39.30808-6/534680716_1088248146708530_5196565418015870623_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeHj256LW9xcvZKSGlk0W8Sk9qXqH-hZeAf2peof6Fl4B9VRVUMErplKloOS0r5J2sfxNfEDKNLLJ-Njil3obLoU&_nc_ohc=i47-Jmx4BbUQ7kNvwG8Ik6f&_nc_oc=AdlpaAdCSq-HflJuMlYS-JS1gimNmvszmQAs29PKEFy3ji9si_CDqkCWZX3YiNOh384&_nc_zt=23&_nc_ht=scontent.fdvo1-2.fna&_nc_gid=-KD8tsayCLagvR7nNKunBQ&oh=00_AffSSwRSNa04NWT7yH0b1yFOCt2yNvGht2JdBRnQBh9nxw&oe=68FFCC79",
+    image: Mendez,
   },
   {
     id: "4",
@@ -47,7 +51,7 @@ const lawyers: Lawyer[] = [
     specialty: "Labor & Employment Law",
     email: "neyramarcoslawoffice@gmail.com",
     phone: "(082) 291 5909",
-    image: "https://scontent.fdvo1-1.fna.fbcdn.net/v/t39.30808-6/486662614_10228900828570078_1484952674209267624_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=111&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeERxjGCmLDZ58NF9TAsP_749bx_LKOVUyj1vH8so5VTKGuUfb4ise_eYnbJnbJXVDFIj-mXd4sQA1uIZDhaaHjU&_nc_ohc=xcT9tSwv18gQ7kNvwHmlSKc&_nc_oc=Adm7EeMdk1vTEg_IIS719XTPAvHlnVy_fcreEwqHTgl0v7xThxo2eVRIKyqOUF8yxh4&_nc_zt=23&_nc_ht=scontent.fdvo1-1.fna&_nc_gid=A_e_wUlJd4FCaUMsKWVniQ&oh=00_AfdIenwUhqrBQ6t58eQu4VhWAzi6ZGdTEJJkN8phHSkz1Q&oe=68FFDB1E",
+    image: Jungco,
   },
 ];
 
