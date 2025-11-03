@@ -1,6 +1,10 @@
 import { Users, Mail, Phone } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import Neyra from "./images/Neyra.jpg";
+import Marcos from "./images/Marcos.jpg";
+import Mendez from "./images/Mendez.jpg";
+import Jungco from "./images/Jungco.jpg";
 
 interface Lawyer {
   id: string;
@@ -15,39 +19,39 @@ interface Lawyer {
 const lawyers: Lawyer[] = [
   {
     id: "1",
-    name: "Sarah Mitchell",
+    name: "Prince Arthur M. Neyra",
     title: "Senior Partner",
-    specialty: "Corporate Law & Contract Disputes",
-    email: "s.mitchell@legalpartners.com",
-    phone: "(555) 123-4501",
-    image: "https://images.unsplash.com/photo-1758518731462-d091b0b4ed0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBsYXd5ZXIlMjBidXNpbmVzc3xlbnwxfHx8fDE3NjAyMDg0MTR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    specialty: "Labor & Employment Law",
+    email: "neyramarcoslawoffice@gmail.com",
+    phone: "0939 928 1717",
+    image: Neyra,
   },
   {
     id: "2",
-    name: "Michael Chen",
-    title: "Partner",
-    specialty: "Property Law & Business Formation",
-    email: "m.chen@legalpartners.com",
-    phone: "(555) 123-4502",
-    image: "https://images.unsplash.com/photo-1578758803946-2c4f6738df87?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxlJTIwYnVzaW5lc3MlMjBwcm9mZXNzaW9uYWx8ZW58MXx8fHwxNzYwMjA4NDE1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    name: "Cloydie Mark A. Marcos",
+    title: "Managing Partner",
+    specialty: "Civil & Commercial Law",
+    email: "neyramarcoslawoffice@gmail.com",
+    phone: "(082) 291 5909",
+    image: Marcos,
   },
   {
     id: "3",
-    name: "Jennifer Lopez",
-    title: "Associate Attorney",
-    specialty: "Employment Law & Family Law",
-    email: "j.lopez@legalpartners.com",
-    phone: "(555) 123-4503",
-    image: "https://images.unsplash.com/photo-1736939681295-bb2e6759dddc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBsYXd5ZXIlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NjAyMDg0MTR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    name: "Ryan E. Mendez",
+    title: "Partner",
+    specialty: "Civil & Commercial Law",
+    email: "neyramarcoslawoffice@gmail.com",
+    phone: "0976 030 2266",
+    image: Mendez,
   },
   {
     id: "4",
-    name: "Robert Johnson",
-    title: "Senior Associate",
-    specialty: "Estate Planning & Intellectual Property",
-    email: "r.johnson@legalpartners.com",
-    phone: "(555) 123-4504",
-    image: "https://images.unsplash.com/photo-1758518731462-d091b0b4ed0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhdHRvcm5leSUyMG9mZmljZSUyMHByb2Zlc3Npb25hbHxlbnwxfHx8fDE3NjAyMDg0MTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    name: "Deolanar C. Jungco",
+    title: "Partner",
+    specialty: "Labor & Employment Law",
+    email: "neyramarcoslawoffice@gmail.com",
+    phone: "(082) 291 5909",
+    image: Jungco,
   },
 ];
 
@@ -117,10 +121,10 @@ export function LawyersPage() {
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors"
               >
                 <Phone className="w-4 h-4" />
-                Call Us: (555) 123-4567
+                Call Us: (082) 291 5909
               </a>
               <a
-                href="mailto:info@legalpartners.com"
+                href="mailto:neyramarcoslawoffice@gmail.com"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors"
               >
                 <Mail className="w-4 h-4" />
