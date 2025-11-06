@@ -50,7 +50,7 @@ resource "aws_db_subnet_group" "main" {
 
 # Database Credentials Secret
 resource "aws_secretsmanager_secret" "db_credentials" {
-  name                    = "${var.project_name}-db-credentials"
+  name                    = "${var.project_name}-db-credentials-test"
   description             = "Database credentials for Law Firm application"
   recovery_window_in_days = 0
 
@@ -68,13 +68,14 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
 resource "random_password" "db_password" {
   length  = 32
   special = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 # RDS Aurora Cluster
 resource "aws_rds_cluster" "main" {
   cluster_identifier      = "${var.project_name}-aurora-cluster"
   engine                  = "aurora-postgresql"
-  engine_version          = "15.4"
+  engine_version          = "15.13"
   database_name           = "lawfirmdb"
   master_username         = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
   master_password         = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
