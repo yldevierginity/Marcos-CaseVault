@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { authService } from "../services/auth-service";
 
 interface ForgotPasswordPageProps {
   onBackToLogin: () => void;
@@ -12,10 +13,26 @@ interface ForgotPasswordPageProps {
 export function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPageProps) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+    
+    try {
+      const result = await authService.forgotPassword(email);
+      if (result.success) {
+        setSubmitted(true);
+      } else {
+        setError(result.error || "Failed to send reset email");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,8 +65,15 @@ export function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPageProps) {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-secondary">
-                Send Reset Link
+              {error && (
+                <div className="text-red-600 text-sm">{error}</div>
+              )}
+              <Button 
+                type="submit" 
+                className="w-full bg-primary hover:bg-secondary"
+                disabled={loading}
+              >
+                {loading ? "Sending..." : "Send Reset Link"}
               </Button>
             </form>
           ) : (
