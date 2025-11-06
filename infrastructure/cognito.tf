@@ -2,6 +2,9 @@
 resource "aws_cognito_user_pool" "main" {
   name = "${var.project_name}-user-pool"
 
+  # Allow email as username
+  alias_attributes = ["email"]
+
   # Password policy
   password_policy {
     minimum_length    = 8
