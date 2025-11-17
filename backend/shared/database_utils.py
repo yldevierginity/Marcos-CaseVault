@@ -94,3 +94,22 @@ def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Failed to extract user from Cognito: {str(e)}")
         return None
+
+def create_response(status_code: int, body: Dict[str, Any], 
+                   headers: Dict[str, str] = None) -> Dict[str, Any]:
+    """Create standardized API Gateway response"""
+    default_headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+    }
+    
+    if headers:
+        default_headers.update(headers)
+    
+    return {
+        'statusCode': status_code,
+        'headers': default_headers,
+        'body': json.dumps(body)
+    }
