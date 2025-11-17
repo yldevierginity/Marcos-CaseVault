@@ -11,17 +11,41 @@ tracer = Tracer()
 
 class DatabaseConnection:
     def __init__(self):
-        """Initialize DB connection class"""
-        pass
-
+        self.secret_arn = os.environ['DB_SECRET_ARN']
+        self.cluster_endpoint = os.environ['CLUSTER_ENDPOINT']
+        self.secrets_client = boto3.client('secretsmanager')
+        self._connection = None
+    
     def get_connection(self):
-        """Get database connection"""
-        pass
-
+        """Get database connection with connection pooling"""
+        if self._connection is None or self._connection.closed:
+            try:
+                # Get database credentials from Secrets Manager
+                secret_response = self.secrets_client.get_secret_value(
+                    SecretId=self.secret_arn
+                )
+                secret = json.loads(secret_response['SecretString'])
+                
+                # Connect to database
+                self._connection = psycopg2.connect(
+                    host=self.cluster_endpoint,
+                    port=5432,
+                    database='lawfirmdb',
+                    user=secret['username'],
+                    password=secret['password'],
+                    connect_timeout=10
+                )
+                logger.info("Database connection established")
+            except Exception as e:
+                logger.error(f"Database connection failed: {str(e)}")
+                raise
+        return self._connection
+    
     def close_connection(self):
         """Close database connection"""
-        pass
-
+        if self._connection and not self._connection.closed:
+            self._connection.close()
+            logger.info("Database connection closed")
 
 class AdminLogger:
     def __init__(self, db_connection: DatabaseConnection):
