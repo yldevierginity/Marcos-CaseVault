@@ -282,3 +282,138 @@ def create_user(db: DatabaseConnection, admin_logger: AdminLogger,
     except Exception as e:
         logger.error(f"Error creating user: {str(e)}")
         return create_response(500, {'error': 'Failed to create user'})
+
+@tracer.capture_method
+def update_user(db: DatabaseConnection, admin_logger: AdminLogger, 
+                user: Dict[str, Any], user_id: str, body: Dict[str, Any],
+                event: Dict[str, Any]) -> Dict[str, Any]:
+    """Update an existing user"""
+    
+    try:
+        # Check if current user is admin or updating themselves
+        if not is_admin_user(db, user['user_id']) and user['user_id'] != user_id:
+            return create_response(403, {'error': 'Admin access required'})
+        
+        # Validate email domain if provided
+        if body.get('email') and not validate_email_domain(body['email']):
+            return create_response(400, {'error': 'Only Gmail addresses are allowed'})
+        
+        # Validate role if provided
+        valid_roles = ['lawyer', 'secretary', 'admin']
+        if body.get('role') and body['role'] not in valid_roles:
+            return create_response(400, {'error': f'Invalid role. Must be one of: {valid_roles}'})
+        
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        # Get current values for logging
+        cursor.execute("""
+            SELECT cognito_user_id, email, first_name, last_name,
+                   role, phone_number, is_active
+            FROM users WHERE user_id = %s
+        """, (user_id,))
+        
+        current_values = cursor.fetchone()
+        if not current_values:
+            cursor.close()
+            return create_response(404, {'error': 'User not found'})
+        
+        # Update user
+        cursor.execute("""
+            UPDATE users SET
+                email = %s, first_name = %s, last_name = %s,
+                role = %s, phone_number = %s, is_active = %s
+            WHERE user_id = %s
+        """, (
+            body.get('email', current_values[1]),
+            body.get('first_name', current_values[2]),
+            body.get('last_name', current_values[3]),
+            body.get('role', current_values[4]),
+            body.get('phone_number', current_values[5]),
+            body.get('is_active', current_values[6]),
+            user_id
+        ))
+        
+        conn.commit()
+        cursor.close()
+        
+        # Log admin action
+        old_values = {
+            'email': current_values[1],
+            'first_name': current_values[2],
+            'last_name': current_values[3],
+            'role': current_values[4],
+            'phone_number': current_values[5],
+            'is_active': current_values[6]
+        }
+        
+        admin_logger.log_action(
+            user['user_id'], 'UPDATE', 'users', user_id,
+            old_values=old_values, new_values=body,
+            ip_address=event.get('requestContext', {}).get('identity', {}).get('sourceIp'),
+            user_agent=event.get('headers', {}).get('User-Agent')
+        )
+        
+        return create_response(200, {'message': 'User updated successfully'})
+        
+    except Exception as e:
+        logger.error(f"Error updating user: {str(e)}")
+        return create_response(500, {'error': 'Failed to update user'})
+
+@tracer.capture_method
+def delete_user(db: DatabaseConnection, admin_logger: AdminLogger, 
+                user: Dict[str, Any], user_id: str, 
+                event: Dict[str, Any]) -> Dict[str, Any]:
+    """Delete a user (admin only)"""
+    
+    try:
+        # Check if current user is admin
+        if not is_admin_user(db, user['user_id']):
+            return create_response(403, {'error': 'Admin access required'})
+        
+        # Prevent self-deletion
+        if user['user_id'] == user_id:
+            return create_response(400, {'error': 'Cannot delete your own account'})
+        
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists and get current values for logging
+        cursor.execute("""
+            SELECT cognito_user_id, email, first_name, last_name,
+                   role, phone_number, is_active
+            FROM users WHERE user_id = %s
+        """, (user_id,))
+        
+        current_values = cursor.fetchone()
+        if not current_values:
+            cursor.close()
+            return create_response(404, {'error': 'User not found'})
+        
+        # Soft delete (set is_active to False)
+        cursor.execute("UPDATE users SET is_active = FALSE WHERE user_id = %s", (user_id,))
+        conn.commit()
+        cursor.close()
+        
+        # Log admin action
+        old_values = {
+            'email': current_values[1],
+            'first_name': current_values[2],
+            'last_name': current_values[3],
+            'role': current_values[4],
+            'phone_number': current_values[5],
+            'is_active': current_values[6]
+        }
+        
+        admin_logger.log_action(
+            user['user_id'], 'DELETE', 'users', user_id,
+            old_values=old_values,
+            ip_address=event.get('requestContext', {}).get('identity', {}).get('sourceIp'),
+            user_agent=event.get('headers', {}).get('User-Agent')
+        )
+        
+        return create_response(200, {'message': 'User deactivated successfully'})
+        
+    except Exception as e:
+        logger.error(f"Error deleting user: {str(e)}")
+        return create_response(500, {'error': 'Failed to delete user'})
