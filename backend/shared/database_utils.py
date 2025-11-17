@@ -121,3 +121,27 @@ def validate_email_domain(email: str) -> bool:
     
     domain = email.split('@')[1].lower()
     return domain == 'gmail.com'
+
+def paginate_results(cursor, page: int = 1, limit: int = 20) -> Dict[str, Any]:
+    """Paginate database results"""
+    offset = (page - 1) * limit
+    
+    # Get total count
+    cursor.execute("SELECT COUNT(*) FROM ({}) as count_query".format(
+        cursor.query.decode() if hasattr(cursor.query, 'decode') else str(cursor.query)
+    ))
+    total_count = cursor.fetchone()[0]
+    
+    # Get paginated results
+    cursor.execute(f"{cursor.query} LIMIT %s OFFSET %s", (limit, offset))
+    results = cursor.fetchall()
+    
+    return {
+        'data': results,
+        'pagination': {
+            'page': page,
+            'limit': limit,
+            'total': total_count,
+            'pages': (total_count + limit - 1) // limit
+        }
+    }
