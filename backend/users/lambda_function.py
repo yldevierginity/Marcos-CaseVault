@@ -417,3 +417,23 @@ def delete_user(db: DatabaseConnection, admin_logger: AdminLogger,
     except Exception as e:
         logger.error(f"Error deleting user: {str(e)}")
         return create_response(500, {'error': 'Failed to delete user'})
+
+def is_admin_user(db: DatabaseConnection, user_id: str) -> bool:
+    """Check if user has admin role"""
+    
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT role FROM users WHERE user_id = %s AND is_active = TRUE
+        """, (user_id,))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        
+        return result and result[0] == 'admin'
+        
+    except Exception as e:
+        logger.error(f"Error checking admin status: {str(e)}")
+        return False
