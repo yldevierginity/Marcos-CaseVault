@@ -73,3 +73,24 @@ class AdminLogger:
             logger.info(f"Admin action logged: {action} on {table_name}")
         except Exception as e:
             logger.error(f"Failed to log admin action: {str(e)}")
+
+def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Extract user information from Cognito JWT token"""
+    try:
+        # Get user info from Cognito authorizer context
+        request_context = event.get('requestContext', {})
+        authorizer = request_context.get('authorizer', {})
+        claims = authorizer.get('claims', {})
+        
+        if not claims:
+            return None
+            
+        return {
+            'user_id': claims.get('sub'),
+            'email': claims.get('email'),
+            'first_name': claims.get('given_name'),
+            'last_name': claims.get('family_name')
+        }
+    except Exception as e:
+        logger.error(f"Failed to extract user from Cognito: {str(e)}")
+        return None
