@@ -113,3 +113,11 @@ def create_response(status_code: int, body: Dict[str, Any],
         'headers': default_headers,
         'body': json.dumps(body)
     }
+
+def validate_email_domain(email: str) -> bool:
+    """Validate that email is from Gmail domain only"""
+    if not email or '@' not in email:
+        return False
+    
+    domain = email.split('@')[1].lower()
+    return domain == 'gmail.com'
