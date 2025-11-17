@@ -76,8 +76,25 @@ class AdminLogger:
             logger.error(f"Failed to log admin action: {str(e)}")
 
 def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Extract user information from JWT"""
-    pass
+    """Extract user information from Cognito JWT token"""
+    try:
+        # Get user info from Cognito authorizer context
+        request_context = event.get('requestContext', {})
+        authorizer = request_context.get('authorizer', {})
+        claims = authorizer.get('claims', {})
+        
+        if not claims:
+            return None
+            
+        return {
+            'user_id': claims.get('sub'),
+            'email': claims.get('email'),
+            'first_name': claims.get('given_name'),
+            'last_name': claims.get('family_name')
+        }
+    except Exception as e:
+        logger.error(f"Failed to extract user from Cognito: {str(e)}")
+        return None
 
 def create_response(status_code: int, body: Dict[str, Any], headers: Dict[str, str] = None) -> Dict[str, Any]:
     """Create standardized API Gateway response"""
