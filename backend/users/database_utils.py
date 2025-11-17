@@ -96,14 +96,53 @@ def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         logger.error(f"Failed to extract user from Cognito: {str(e)}")
         return None
 
-def create_response(status_code: int, body: Dict[str, Any], headers: Dict[str, str] = None) -> Dict[str, Any]:
+def create_response(status_code: int, body: Dict[str, Any], 
+                   headers: Dict[str, str] = None) -> Dict[str, Any]:
     """Create standardized API Gateway response"""
-    pass
+    default_headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+    }
+    
+    if headers:
+        default_headers.update(headers)
+    
+    return {
+        'statusCode': status_code,
+        'headers': default_headers,
+        'body': json.dumps(body)
+    }
 
 def validate_email_domain(email: str) -> bool:
-    """Validate Gmail domain only"""
-    pass
+    """Validate that email is from Gmail domain only"""
+    if not email or '@' not in email:
+        return False
+    
+    domain = email.split('@')[1].lower()
+    return domain == 'gmail.com'
 
 def paginate_results(cursor, page: int = 1, limit: int = 20) -> Dict[str, Any]:
-    """Paginate DB results"""
-    pass
+    """Paginate database results"""
+    offset = (page - 1) * limit
+    
+    # Get total count
+    cursor.execute("SELECT COUNT(*) FROM ({}) as count_query".format(
+        cursor.query.decode() if hasattr(cursor.query, 'decode') else str(cursor.query)
+    ))
+    total_count = cursor.fetchone()[0]
+    
+    # Get paginated results
+    cursor.execute(f"{cursor.query} LIMIT %s OFFSET %s", (limit, offset))
+    results = cursor.fetchall()
+    
+    return {
+        'data': results,
+        'pagination': {
+            'page': page,
+            'limit': limit,
+            'total': total_count,
+            'pages': (total_count + limit - 1) // limit
+        }
+    }
