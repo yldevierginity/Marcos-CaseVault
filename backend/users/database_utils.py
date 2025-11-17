@@ -49,13 +49,31 @@ class DatabaseConnection:
 
 class AdminLogger:
     def __init__(self, db_connection: DatabaseConnection):
-        """Initialize admin logger"""
-        pass
-
-    def log_action(self, user_id: str, action: str, table_name: str, **kwargs):
-        """Log admin actions"""
-        pass
-
+        self.db = db_connection
+    
+    def log_action(self, user_id: str, action: str, table_name: str, 
+                   record_id: str = None, old_values: Dict = None, 
+                   new_values: Dict = None, ip_address: str = None, 
+                   user_agent: str = None):
+        """Log admin action to database"""
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO admin_logs (user_id, action, table_name, record_id, 
+                                      old_values, new_values, ip_address, user_agent)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, action, table_name, record_id, 
+                  json.dumps(old_values) if old_values else None,
+                  json.dumps(new_values) if new_values else None,
+                  ip_address, user_agent))
+            
+            conn.commit()
+            cursor.close()
+            logger.info(f"Admin action logged: {action} on {table_name}")
+        except Exception as e:
+            logger.error(f"Failed to log admin action: {str(e)}")
 
 def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Extract user information from JWT"""
