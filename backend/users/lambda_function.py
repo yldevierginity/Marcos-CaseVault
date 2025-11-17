@@ -209,3 +209,76 @@ def list_users(db: DatabaseConnection, admin_logger: AdminLogger,
     except Exception as e:
         logger.error(f"Error listing users: {str(e)}")
         return create_response(500, {'error': 'Failed to retrieve users'})
+
+@tracer.capture_method
+def create_user(db: DatabaseConnection, admin_logger: AdminLogger, 
+                user: Dict[str, Any], body: Dict[str, Any], 
+                event: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a new user (admin only)"""
+    
+    try:
+        # Check if current user is admin
+        if not is_admin_user(db, user['user_id']):
+            return create_response(403, {'error': 'Admin access required'})
+        
+        # Validate required fields
+        required_fields = ['cognito_user_id', 'email', 'first_name', 'last_name', 'role']
+        for field in required_fields:
+            if not body.get(field):
+                return create_response(400, {'error': f'{field} is required'})
+        
+        # Validate email domain
+        if not validate_email_domain(body['email']):
+            return create_response(400, {'error': 'Only Gmail addresses are allowed'})
+        
+        # Validate role
+        valid_roles = ['lawyer', 'secretary', 'admin']
+        if body['role'] not in valid_roles:
+            return create_response(400, {'error': f'Invalid role. Must be one of: {valid_roles}'})
+        
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        # Check if user already exists
+        cursor.execute("SELECT user_id FROM users WHERE email = %s OR cognito_user_id = %s", 
+                      (body['email'], body['cognito_user_id']))
+        if cursor.fetchone():
+            cursor.close()
+            return create_response(400, {'error': 'User already exists'})
+        
+        # Insert new user
+        cursor.execute("""
+            INSERT INTO users (cognito_user_id, email, first_name, last_name,
+                             role, phone_number, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING user_id
+        """, (
+            body['cognito_user_id'],
+            body['email'],
+            body['first_name'],
+            body['last_name'],
+            body['role'],
+            body.get('phone_number'),
+            body.get('is_active', True)
+        ))
+        
+        new_user_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        
+        # Log admin action
+        admin_logger.log_action(
+            user['user_id'], 'CREATE', 'users', str(new_user_id),
+            new_values=body,
+            ip_address=event.get('requestContext', {}).get('identity', {}).get('sourceIp'),
+            user_agent=event.get('headers', {}).get('User-Agent')
+        )
+        
+        return create_response(201, {
+            'message': 'User created successfully',
+            'user_id': str(new_user_id)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error creating user: {str(e)}")
+        return create_response(500, {'error': 'Failed to create user'})
