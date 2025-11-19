@@ -48,6 +48,8 @@ def lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, A
         # Perform search based on type
         if search_type == 'clients':
             return search_clients(db, admin_logger, user, search_query, page, limit, event)
+        elif search_type == 'cases':
+            return search_cases(db, admin_logger, user, search_query, page, limit, event)
         
         return create_response(200, {'message': 'Search handler initialized'})
     
@@ -175,3 +177,128 @@ def search_clients(db: DatabaseConnection, admin_logger: AdminLogger,
             f"Error searching clients: {str(e)}", event
         )
         return create_response(500, {'error': 'Failed to search clients'})
+
+@tracer.capture_method
+def search_cases(db: DatabaseConnection, admin_logger: AdminLogger, 
+                 user: Dict[str, Any], query: str, page: int, limit: int,
+                 event: Dict[str, Any]) -> Dict[str, Any]:
+    """Search cases by case number, title, description, or client name"""
+    
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        # Calculate offset for pagination
+        offset = (page - 1) * limit
+        
+        # Search query with joins to include client information
+        search_sql = """
+            SELECT 
+                ca.case_id,
+                ca.case_number,
+                ca.title,
+                ca.description,
+                ca.status,
+                ca.priority,
+                ca.created_at,
+                ca.updated_at,
+                c.first_name,
+                c.last_name,
+                c.email,
+                COUNT(*) OVER() as total_count
+            FROM cases ca
+            LEFT JOIN clients c ON ca.client_id = c.client_id
+            WHERE 
+                ca.case_number ILIKE %s OR
+                ca.title ILIKE %s OR
+                ca.description ILIKE %s OR
+                ca.status ILIKE %s OR
+                CONCAT(c.first_name, ' ', c.last_name) ILIKE %s OR
+                c.email ILIKE %s
+            ORDER BY 
+                CASE 
+                    WHEN ca.case_number ILIKE %s THEN 1
+                    WHEN ca.title ILIKE %s THEN 2
+                    WHEN ca.status ILIKE %s THEN 3
+                    ELSE 4
+                END,
+                ca.created_at DESC
+            LIMIT %s OFFSET %s
+        """
+        
+        search_pattern = f"%{query}%"
+        cursor.execute(search_sql, (
+            search_pattern, search_pattern, search_pattern, search_pattern,
+            search_pattern, search_pattern, search_pattern, search_pattern,
+            search_pattern, limit, offset
+        ))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            # Log the search attempt
+            admin_logger.log_action(
+                user['user_id'], 'SEARCH_CASES', 
+                f"No results found for query: {query}", event
+            )
+            
+            return create_response(200, {
+                'cases': [],
+                'pagination': {
+                    'page': page,
+                    'limit': limit,
+                    'total': 0,
+                    'total_pages': 0
+                },
+                'query': query
+            })
+        
+        # Format results
+        cases = []
+        total_count = results[0][11] if results else 0
+        
+        for row in results:
+            case = {
+                'case_id': row[0],
+                'case_number': row[1],
+                'title': row[2],
+                'description': row[3],
+                'status': row[4],
+                'priority': row[5],
+                'created_at': row[6].isoformat() if row[6] else None,
+                'updated_at': row[7].isoformat() if row[7] else None,
+                'client': {
+                    'first_name': row[8],
+                    'last_name': row[9],
+                    'email': row[10]
+                } if row[8] else None
+            }
+            cases.append(case)
+        
+        # Calculate pagination info
+        total_pages = (total_count + limit - 1) // limit
+        
+        # Log successful search
+        admin_logger.log_action(
+            user['user_id'], 'SEARCH_CASES', 
+            f"Found {len(cases)} cases for query: {query}", event
+        )
+        
+        return create_response(200, {
+            'cases': cases,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total_count,
+                'total_pages': total_pages
+            },
+            'query': query
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching cases: {str(e)}")
+        admin_logger.log_action(
+            user['user_id'], 'SEARCH_CASES_ERROR', 
+            f"Error searching cases: {str(e)}", event
+        )
+        return create_response(500, {'error': 'Failed to search cases'})
