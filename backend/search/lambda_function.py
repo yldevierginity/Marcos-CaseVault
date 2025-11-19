@@ -50,6 +50,8 @@ def lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, A
             return search_clients(db, admin_logger, user, search_query, page, limit, event)
         elif search_type == 'cases':
             return search_cases(db, admin_logger, user, search_query, page, limit, event)
+        elif search_type == 'hearings':
+            return search_hearings(db, admin_logger, user, search_query, page, limit, event)
         
         return create_response(200, {'message': 'Search handler initialized'})
     
@@ -302,3 +304,133 @@ def search_cases(db: DatabaseConnection, admin_logger: AdminLogger,
             f"Error searching cases: {str(e)}", event
         )
         return create_response(500, {'error': 'Failed to search cases'})
+
+@tracer.capture_method
+def search_hearings(db: DatabaseConnection, admin_logger: AdminLogger, 
+                    user: Dict[str, Any], query: str, page: int, limit: int,
+                    event: Dict[str, Any]) -> Dict[str, Any]:
+    """Search hearings by description, location, or case information"""
+    
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        # Calculate offset for pagination
+        offset = (page - 1) * limit
+        
+        # Search query with joins to include case and client information
+        search_sql = """
+            SELECT 
+                h.hearing_id,
+                h.hearing_date,
+                h.hearing_time,
+                h.location,
+                h.description,
+                h.status,
+                h.created_at,
+                h.updated_at,
+                ca.case_number,
+                ca.title as case_title,
+                c.first_name,
+                c.last_name,
+                COUNT(*) OVER() as total_count
+            FROM hearings h
+            LEFT JOIN cases ca ON h.case_id = ca.case_id
+            LEFT JOIN clients c ON ca.client_id = c.client_id
+            WHERE 
+                h.description ILIKE %s OR
+                h.location ILIKE %s OR
+                h.status ILIKE %s OR
+                ca.case_number ILIKE %s OR
+                ca.title ILIKE %s OR
+                CONCAT(c.first_name, ' ', c.last_name) ILIKE %s
+            ORDER BY 
+                CASE 
+                    WHEN ca.case_number ILIKE %s THEN 1
+                    WHEN h.description ILIKE %s THEN 2
+                    WHEN h.location ILIKE %s THEN 3
+                    ELSE 4
+                END,
+                h.hearing_date DESC
+            LIMIT %s OFFSET %s
+        """
+        
+        search_pattern = f"%{query}%"
+        cursor.execute(search_sql, (
+            search_pattern, search_pattern, search_pattern, search_pattern,
+            search_pattern, search_pattern, search_pattern, search_pattern,
+            search_pattern, limit, offset
+        ))
+        
+        results = cursor.fetchall()
+        
+        if not results:
+            # Log the search attempt
+            admin_logger.log_action(
+                user['user_id'], 'SEARCH_HEARINGS', 
+                f"No results found for query: {query}", event
+            )
+            
+            return create_response(200, {
+                'hearings': [],
+                'pagination': {
+                    'page': page,
+                    'limit': limit,
+                    'total': 0,
+                    'total_pages': 0
+                },
+                'query': query
+            })
+        
+        # Format results
+        hearings = []
+        total_count = results[0][12] if results else 0
+        
+        for row in results:
+            hearing = {
+                'hearing_id': row[0],
+                'hearing_date': row[1].isoformat() if row[1] else None,
+                'hearing_time': str(row[2]) if row[2] else None,
+                'location': row[3],
+                'description': row[4],
+                'status': row[5],
+                'created_at': row[6].isoformat() if row[6] else None,
+                'updated_at': row[7].isoformat() if row[7] else None,
+                'case': {
+                    'case_number': row[8],
+                    'title': row[9]
+                } if row[8] else None,
+                'client': {
+                    'first_name': row[10],
+                    'last_name': row[11]
+                } if row[10] else None
+            }
+            hearings.append(hearing)
+        
+        # Calculate pagination info
+        total_pages = (total_count + limit - 1) // limit
+        
+        # Log successful search
+        admin_logger.log_action(
+            user['user_id'], 'SEARCH_HEARINGS', 
+            f"Found {len(hearings)} hearings for query: {query}", event
+        )
+        
+        return create_response(200, {
+            'hearings': hearings,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total_count,
+                'total_pages': total_pages
+            },
+            'query': query
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching hearings: {str(e)}")
+        admin_logger.log_action(
+            user['user_id'], 'SEARCH_HEARINGS_ERROR', 
+            f"Error searching hearings: {str(e)}", event
+        )
+        return create_response(500, {'error': 'Failed to search hearings'})
