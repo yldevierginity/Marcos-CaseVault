@@ -52,8 +52,8 @@ def lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, A
             return search_cases(db, admin_logger, user, search_query, page, limit, event)
         elif search_type == 'hearings':
             return search_hearings(db, admin_logger, user, search_query, page, limit, event)
-        
-        return create_response(200, {'message': 'Search handler initialized'})
+        else:
+            return search_all(db, admin_logger, user, search_query, page, limit, event)
     
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
@@ -434,3 +434,67 @@ def search_hearings(db: DatabaseConnection, admin_logger: AdminLogger,
             f"Error searching hearings: {str(e)}", event
         )
         return create_response(500, {'error': 'Failed to search hearings'})
+
+@tracer.capture_method
+def search_all(db: DatabaseConnection, admin_logger: AdminLogger, 
+               user: Dict[str, Any], query: str, page: int, limit: int,
+               event: Dict[str, Any]) -> Dict[str, Any]:
+    """Search across all entities: clients, cases, and hearings"""
+    
+    try:
+        # Distribute limit across entity types (roughly equal)
+        entity_limit = max(1, limit // 3)
+        
+        # Search each entity type
+        clients_result = search_clients(db, admin_logger, user, query, 1, entity_limit, event)
+        cases_result = search_cases(db, admin_logger, user, query, 1, entity_limit, event)
+        hearings_result = search_hearings(db, admin_logger, user, query, 1, entity_limit, event)
+        
+        # Extract data from results
+        clients_data = clients_result.get('body', {}) if isinstance(clients_result.get('body'), dict) else json.loads(clients_result.get('body', '{}'))
+        cases_data = cases_result.get('body', {}) if isinstance(cases_result.get('body'), dict) else json.loads(cases_result.get('body', '{}'))
+        hearings_data = hearings_result.get('body', {}) if isinstance(hearings_result.get('body'), dict) else json.loads(hearings_result.get('body', '{}'))
+        
+        clients = clients_data.get('clients', [])
+        cases = cases_data.get('cases', [])
+        hearings = hearings_data.get('hearings', [])
+        
+        # Calculate totals
+        total_clients = clients_data.get('pagination', {}).get('total', 0)
+        total_cases = cases_data.get('pagination', {}).get('total', 0)
+        total_hearings = hearings_data.get('pagination', {}).get('total', 0)
+        total_results = total_clients + total_cases + total_hearings
+        
+        # Log successful search
+        admin_logger.log_action(
+            user['user_id'], 'SEARCH_ALL', 
+            f"Found {len(clients)} clients, {len(cases)} cases, {len(hearings)} hearings for query: {query}", 
+            event
+        )
+        
+        return create_response(200, {
+            'results': {
+                'clients': clients,
+                'cases': cases,
+                'hearings': hearings
+            },
+            'summary': {
+                'total_clients': total_clients,
+                'total_cases': total_cases,
+                'total_hearings': total_hearings,
+                'total_results': total_results,
+                'returned_clients': len(clients),
+                'returned_cases': len(cases),
+                'returned_hearings': len(hearings)
+            },
+            'query': query,
+            'search_type': 'all'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in search_all: {str(e)}")
+        admin_logger.log_action(
+            user['user_id'], 'SEARCH_ALL_ERROR', 
+            f"Error in unified search: {str(e)}", event
+        )
+        return create_response(500, {'error': 'Failed to perform unified search'})
