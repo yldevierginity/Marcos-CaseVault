@@ -1,0 +1,125 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    defaults:
+      run:
+        working-directory: ./infrastructure
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+      
+      - name: Terraform Init
+        run: terraform init
+      
+      - name: Terraform Plan
+        run: terraform plan -var="environment=${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}"
+      
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve -var="environment=${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}"
+
+  deploy-backend:
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Deploy Lambda functions
+        run: |
+          for dir in backend/*/; do
+            if [ -f "$dir/requirements.txt" ]; then
+              function_name=$(basename "$dir")
+              echo "Deploying $function_name"
+              cd "$dir"
+              
+              # Create deployment package
+              pip install -r requirements.txt -t .
+              zip -r "../${function_name}.zip" . -x "*.pyc" "__pycache__/*"
+              
+              # Update Lambda function
+              aws lambda update-function-code \
+                --function-name "casevault-${function_name}-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}" \
+                --zip-file "fileb://../${function_name}.zip"
+              
+              cd - > /dev/null
+            fi
+          done
+
+  deploy-frontend:
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ github.ref == 'refs/heads/main' && secrets.PROD_API_URL || secrets.DEV_API_URL }}
+          VITE_COGNITO_USER_POOL_ID: ${{ github.ref == 'refs/heads/main' && secrets.PROD_COGNITO_USER_POOL_ID || secrets.DEV_COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ github.ref == 'refs/heads/main' && secrets.PROD_COGNITO_CLIENT_ID || secrets.DEV_COGNITO_CLIENT_ID }}
+      
+      - name: Deploy to S3
+        run: |
+          BUCKET_NAME="casevault-frontend-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}"
+          aws s3 sync dist/ s3://$BUCKET_NAME --delete
+          aws cloudfront create-invalidation --distribution-id ${{ github.ref == 'refs/heads/main' && secrets.PROD_CLOUDFRONT_ID || secrets.DEV_CLOUDFRONT_ID }} --paths "/*"

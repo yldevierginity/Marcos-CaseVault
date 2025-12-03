@@ -1,0 +1,53 @@
+name: Feature Branch
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'feat/**'
+      - 'hotfix/**'
+      - 'fix/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Test Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+      
+      - name: Test Backend
+        run: |
+          for dir in backend/*/; do
+            if [ -f "$dir/requirements.txt" ]; then
+              echo "Testing $dir"
+              cd "$dir"
+              pip install -r requirements.txt
+              python -m py_compile lambda_function.py
+              cd - > /dev/null
+            fi
+          done
+      
+      - name: Test Terraform
+        run: |
+          cd infrastructure
+          terraform fmt -check
+          terraform init -backend=false
+          terraform validate
