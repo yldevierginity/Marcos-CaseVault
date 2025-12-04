@@ -43,10 +43,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client jq zip
-      
+   
       - name: Bootstrap Terraform state backend
         run: ./bootstrap-terraform-state.sh
-      
+
       - name: Create Lambda packages
         run: |
           cd backend
