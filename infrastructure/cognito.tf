@@ -61,9 +61,9 @@ resource "aws_cognito_user_pool_client" "main" {
   name         = "${var.project_name}-user-pool-client"
   user_pool_id = aws_cognito_user_pool.main.id
 
-  generate_secret                      = false
-  prevent_user_existence_errors       = "ENABLED"
-  enable_token_revocation             = true
+  generate_secret                               = false
+  prevent_user_existence_errors                 = "ENABLED"
+  enable_token_revocation                       = true
   enable_propagate_additional_user_context_data = false
 
   # Authentication flows
@@ -90,8 +90,8 @@ resource "aws_cognito_user_pool_client" "main" {
 
   # OAuth settings
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows                 = ["code", "implicit"]
-  allowed_oauth_scopes                = ["email", "openid", "profile"]
+  allowed_oauth_flows                  = ["code", "implicit"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
 }
 
 # Cognito Identity Pool

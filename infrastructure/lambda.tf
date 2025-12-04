@@ -62,13 +62,13 @@ resource "aws_iam_role_policy" "lambda_custom" {
 
 # Lambda Functions
 resource "aws_lambda_function" "clients" {
-  filename         = "../backend/clients.zip"
-  function_name    = "${var.project_name}-clients"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/clients.zip"
+  function_name = "${var.project_name}-clients"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -77,9 +77,9 @@ resource "aws_lambda_function" "clients" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
@@ -92,13 +92,13 @@ resource "aws_lambda_function" "clients" {
 }
 
 resource "aws_lambda_function" "cases" {
-  filename         = "../backend/cases.zip"
-  function_name    = "${var.project_name}-cases"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/cases.zip"
+  function_name = "${var.project_name}-cases"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -107,9 +107,9 @@ resource "aws_lambda_function" "cases" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
@@ -122,13 +122,13 @@ resource "aws_lambda_function" "cases" {
 }
 
 resource "aws_lambda_function" "hearings" {
-  filename         = "../backend/hearings.zip"
-  function_name    = "${var.project_name}-hearings"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/hearings.zip"
+  function_name = "${var.project_name}-hearings"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -137,9 +137,9 @@ resource "aws_lambda_function" "hearings" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
@@ -152,13 +152,13 @@ resource "aws_lambda_function" "hearings" {
 }
 
 resource "aws_lambda_function" "users" {
-  filename         = "../backend/users.zip"
-  function_name    = "${var.project_name}-users"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/users.zip"
+  function_name = "${var.project_name}-users"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -167,9 +167,9 @@ resource "aws_lambda_function" "users" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
@@ -182,13 +182,13 @@ resource "aws_lambda_function" "users" {
 }
 
 resource "aws_lambda_function" "search" {
-  filename         = "../backend/search.zip"
-  function_name    = "${var.project_name}-search"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/search.zip"
+  function_name = "${var.project_name}-search"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -197,9 +197,9 @@ resource "aws_lambda_function" "search" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
@@ -212,13 +212,13 @@ resource "aws_lambda_function" "search" {
 }
 
 resource "aws_lambda_function" "notifications" {
-  filename         = "../backend/notifications.zip"
-  function_name    = "${var.project_name}-notifications"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/notifications.zip"
+  function_name = "${var.project_name}-notifications"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -227,9 +227,9 @@ resource "aws_lambda_function" "notifications" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
@@ -242,13 +242,13 @@ resource "aws_lambda_function" "notifications" {
 }
 
 resource "aws_lambda_function" "admin_logs" {
-  filename         = "../backend/admin_logs.zip"
-  function_name    = "${var.project_name}-admin-logs"
-  role            = aws_iam_role.lambda_execution.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
+  filename      = "../backend/admin_logs.zip"
+  function_name = "${var.project_name}-admin-logs"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -257,9 +257,9 @@ resource "aws_lambda_function" "admin_logs" {
 
   environment {
     variables = {
-      DB_SECRET_ARN     = aws_secretsmanager_secret.db_credentials.arn
-      USER_POOL_ID      = aws_cognito_user_pool.main.id
-      CLUSTER_ENDPOINT  = aws_rds_cluster.main.endpoint
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db_credentials.arn
+      USER_POOL_ID     = aws_cognito_user_pool.main.id
+      CLUSTER_ENDPOINT = aws_rds_cluster.main.endpoint
     }
   }
 
