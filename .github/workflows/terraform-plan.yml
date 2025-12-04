@@ -1,0 +1,106 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'infrastructure/**'
+      - 'backend/**'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check AWS credentials
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "AWS credentials not configured. Skipping Terraform plan."
+            echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets in repository settings."
+            exit 0
+          fi
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-1
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y zip
+      
+      - name: Create Lambda packages
+        run: |
+          cd backend
+          for func in clients cases hearings users search notifications admin_logs; do
+            if [ -d "$func" ] && [ -f "$func/requirements.txt" ]; then
+              echo "Creating package for $func..."
+              cd "$func"
+              pip install -r requirements.txt -t . --quiet --no-deps || pip install -r requirements.txt -t . --quiet
+              if [ -f "../shared/database_utils.py" ]; then
+                cp ../shared/database_utils.py .
+              fi
+              zip -r "../${func}.zip" . -x "*.pyc" "__pycache__/*" >/dev/null 2>&1
+              cd ..
+              echo "Created ${func}.zip"
+            else
+              echo "Skipping $func - missing directory or requirements.txt"
+            fi
+          done
+      
+      - name: Bootstrap S3 backend
+        run: |
+          chmod +x bootstrap-terraform-state.sh
+          ./bootstrap-terraform-state.sh
+      
+      - name: Terraform Init
+        run: |
+          cd infrastructure
+          terraform init
+      
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infrastructure
+          terraform plan -no-color -out=tfplan
+        continue-on-error: true
+      
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const output = `#### Terraform Plan 📖 \`${{ steps.plan.outcome }}\`
+            
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`terraform
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            
+            </details>
+            
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

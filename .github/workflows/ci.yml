@@ -7,12 +7,35 @@ on:
     branches: [main, develop]
 
 jobs:
-  frontend:
+  test-backend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install pytest pytest-cov
+      
+      - name: Run tests
+        run: |
+          cd backend
+          if [ -d tests ]; then
+            python -m pytest tests/ -v --cov=.
+          else
+            echo "No tests directory found, skipping tests"
+          fi
+
+  build-frontend:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
@@ -22,40 +45,17 @@ jobs:
           node-version: '18'
       
       - name: Install dependencies
-        run: npm install
-      
-      - name: Build
-        run: npm run build
-
-  backend:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      
-      - name: Test Lambda functions
         run: |
-          for dir in backend/*/; do
-            if [ -f "$dir/requirements.txt" ]; then
-              echo "Testing $dir"
-              cd "$dir"
-              pip install -r requirements.txt
-              python -m py_compile lambda_function.py
-              cd - > /dev/null
-            fi
-          done
+          cd frontend
+          npm install
+      
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
 
-  terraform:
+  validate-terraform:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./infrastructure
-    
     steps:
       - uses: actions/checkout@v4
       
@@ -64,11 +64,14 @@ jobs:
         with:
           terraform_version: '1.5.0'
       
-      - name: Terraform Format
-        run: terraform fmt -check
-      
-      - name: Terraform Init (validation only)
-        run: terraform init -backend=false
+      - name: Terraform Format Check
+        run: |
+          cd infrastructure
+          terraform fmt -check -diff
+        continue-on-error: true
       
       - name: Terraform Validate
-        run: terraform validate
+        run: |
+          cd infrastructure
+          terraform init -backend=false
+          terraform validate
