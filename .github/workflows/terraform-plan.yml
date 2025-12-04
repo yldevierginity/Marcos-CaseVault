@@ -17,6 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Check AWS credentials
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "AWS credentials not configured. Skipping Terraform plan."
+            echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets in repository settings."
+            exit 0
+          fi
+      
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
