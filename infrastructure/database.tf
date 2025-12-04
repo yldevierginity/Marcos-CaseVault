@@ -50,7 +50,7 @@ resource "aws_db_subnet_group" "main" {
 
 # Database Credentials Secret
 resource "aws_secretsmanager_secret" "db_credentials" {
-  name                    = "${var.project_name}-db-credentials-test"
+  name                    = "${var.project_name}-db-credentials-test1"
   description             = "Database credentials for Law Firm application"
   recovery_window_in_days = 0
 
