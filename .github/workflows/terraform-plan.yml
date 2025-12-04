@@ -34,24 +34,32 @@ jobs:
         with:
           python-version: '3.11'
       
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y zip
+      
       - name: Create Lambda packages
         run: |
           cd backend
           for func in clients cases hearings users search notifications admin_logs; do
             if [ -d "$func" ] && [ -f "$func/requirements.txt" ]; then
+              echo "Creating package for $func..."
               cd "$func"
-              pip install -r requirements.txt -t . --quiet
-              cp ../shared/database_utils.py . 2>/dev/null || true
-              zip -r "../${func}.zip" . -x "*.pyc" "__pycache__/*" >/dev/null
+              pip install -r requirements.txt -t . --quiet --no-deps || pip install -r requirements.txt -t . --quiet
+              if [ -f "../shared/database_utils.py" ]; then
+                cp ../shared/database_utils.py .
+              fi
+              zip -r "../${func}.zip" . -x "*.pyc" "__pycache__/*" >/dev/null 2>&1
               cd ..
+              echo "Created ${func}.zip"
+            else
+              echo "Skipping $func - missing directory or requirements.txt"
             fi
           done
       
-      - name: Bootstrap S3 backend (if needed)
+      - name: Bootstrap S3 backend
         run: |
-          if ! aws s3api head-bucket --bucket casevault-terraform-state 2>/dev/null; then
-            ./bootstrap-terraform-state.sh
-          fi
+          chmod +x bootstrap-terraform-state.sh
+          ./bootstrap-terraform-state.sh
       
       - name: Terraform Init
         run: |
@@ -62,18 +70,19 @@ jobs:
         id: plan
         run: |
           cd infrastructure
-          terraform plan -no-color
+          terraform plan -no-color -out=tfplan
         continue-on-error: true
       
       - name: Comment PR
         uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
         with:
           script: |
-            const output = `#### Terraform Plan 📖
+            const output = `#### Terraform Plan 📖 \`${{ steps.plan.outcome }}\`
             
             <details><summary>Show Plan</summary>
             
-            \`\`\`
+            \`\`\`terraform
             ${{ steps.plan.outputs.stdout }}
             \`\`\`
             

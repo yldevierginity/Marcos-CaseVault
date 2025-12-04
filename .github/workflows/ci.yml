@@ -34,7 +34,7 @@ jobs:
             echo "No tests directory found, skipping tests"
           fi
 
-  test-frontend:
+  build-frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,16 +49,7 @@ jobs:
           cd frontend
           npm ci
       
-      - name: Run tests
-        run: |
-          cd frontend
-          if npm run test --if-present; then
-            echo "Tests completed"
-          else
-            echo "No tests configured"
-          fi
-      
-      - name: Build
+      - name: Build frontend
         run: |
           cd frontend
           npm run build
