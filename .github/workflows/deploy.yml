@@ -46,7 +46,7 @@ jobs:
       
       - name: Bootstrap Terraform state backend
         run: ./bootstrap-terraform-state.sh
-      
+
       - name: Create Lambda packages
         run: |
           cd backend
