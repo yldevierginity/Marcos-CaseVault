@@ -66,26 +66,26 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
 }
 
 resource "random_password" "db_password" {
-  length  = 32
-  special = true
+  length           = 32
+  special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 # RDS Aurora Cluster
 resource "aws_rds_cluster" "main" {
-  cluster_identifier      = "${var.project_name}-aurora-cluster"
-  engine                  = "aurora-postgresql"
-  engine_version          = "15.13"
-  database_name           = "lawfirmdb"
-  master_username         = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
-  master_password         = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
-  backup_retention_period = 7
-  preferred_backup_window = "07:00-09:00"
+  cluster_identifier           = "${var.project_name}-aurora-cluster"
+  engine                       = "aurora-postgresql"
+  engine_version               = "15.13"
+  database_name                = "lawfirmdb"
+  master_username              = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
+  master_password              = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
+  backup_retention_period      = 7
+  preferred_backup_window      = "07:00-09:00"
   preferred_maintenance_window = "sun:09:00-sun:11:00"
-  skip_final_snapshot    = true
-  deletion_protection     = false
-  vpc_security_group_ids = [aws_security_group.rds.id]
-  db_subnet_group_name   = aws_db_subnet_group.main.name
+  skip_final_snapshot          = true
+  deletion_protection          = false
+  vpc_security_group_ids       = [aws_security_group.rds.id]
+  db_subnet_group_name         = aws_db_subnet_group.main.name
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-aurora-cluster"
