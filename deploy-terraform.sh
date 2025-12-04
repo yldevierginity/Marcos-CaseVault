@@ -252,7 +252,7 @@ deploy_terraform() {
     
     # Initialize Terraform
     print_status "Initializing Terraform..."
-    terraform init
+    terraform init -backend-config=backend.hcl
     
     # Validate Terraform configuration
     print_status "Validating Terraform configuration..."

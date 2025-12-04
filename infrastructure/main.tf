@@ -1,15 +1,7 @@
 # Terraform configuration for Law Firm Serverless Application
 terraform {
   required_version = ">= 1.0"
-
-  backend "s3" {
-    bucket         = "casevault-terraform-state"
-    key            = "infrastructure/terraform.tfstate"
-    region         = "ap-southeast-1"
-    encrypt        = true
-    dynamodb_table = "casevault-terraform-locks"
-  }
-
+  
   required_providers {
     aws = {
       source  = "hashicorp/aws"
