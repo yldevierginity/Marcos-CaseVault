@@ -4,7 +4,6 @@ import boto3
 import os
 from typing import Dict, Any, List, Optional
 from aws_lambda_powertools import Logger, Tracer
-from aws_lambda_powertools.utilities.typing import LambdaContext
 
 logger = Logger()
 tracer = Tracer()
