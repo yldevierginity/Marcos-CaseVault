@@ -42,7 +42,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client jq zip
+          sudo apt-get install -y jq zip
       
       - name: Bootstrap Terraform state backend
         run: ./bootstrap-terraform-state.sh
@@ -62,14 +62,33 @@ jobs:
           done
           cd ..
       
-      - name: Deploy infrastructure
+      - name: Update Lambda functions only
         run: |
           cd infrastructure
           terraform init
-          terraform validate
-          terraform plan -var="aws_region=${{ vars.AWS_REGION || 'ap-southeast-1' }}" -out=tfplan
-          terraform apply tfplan
-          cd ..
+          
+          # Get existing outputs without applying
+          if terraform state list >/dev/null 2>&1; then
+            echo "Infrastructure exists, updating Lambda functions only..."
+            
+            # Update Lambda function code
+            cd ../backend
+            for func in clients cases hearings users search notifications admin_logs; do
+              if [ -f "${func}.zip" ]; then
+                echo "Updating Lambda function: $func"
+                FUNCTION_NAME=$(aws lambda list-functions --query "Functions[?contains(FunctionName, '$func')].FunctionName" --output text | head -1)
+                if [ -n "$FUNCTION_NAME" ]; then
+                  aws lambda update-function-code \
+                    --function-name "$FUNCTION_NAME" \
+                    --zip-file "fileb://${func}.zip"
+                fi
+              fi
+            done
+            cd ../infrastructure
+          else
+            echo "No infrastructure found, please run manual deployment first"
+            exit 1
+          fi
       
       - name: Get Terraform outputs
         id: tf_outputs
@@ -81,7 +100,7 @@ jobs:
           echo "identity_pool_id=$(terraform output -raw identity_pool_id)" >> $GITHUB_OUTPUT
           cd ..
       
-      - name: Build and deploy frontend
+      - name: Build frontend
         run: |
           cd frontend
           cat > .env << EOF
