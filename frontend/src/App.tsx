@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./components/LoginPage";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
+import { ResetPasswordPage } from "./components/ResetPasswordPage";
+import { NewPasswordPage } from "./components/NewPasswordPage";
 import { Dashboard } from "./components/Dashboard";
 import { CasesPage } from "./components/CasesPage";
 import { AboutPage } from "./components/AboutPage";
@@ -13,6 +15,8 @@ import { authService } from "./services/auth-service";
 type Page =
   | "login"
   | "forgot-password"
+  | "reset-password"
+  | "new-password"
   | "home"
   | "cases"
   | "about"
@@ -95,9 +99,9 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = authService.subscribe((state) => {
       setAuthState(state);
-      if (state.isAuthenticated) {
+      if (state.isAuthenticated && !state.isLoading) {
         setCurrentPage("home");
-      } else {
+      } else if (!state.isAuthenticated && !state.isLoading) {
         setCurrentPage("login");
       }
     });
@@ -106,7 +110,10 @@ export default function App() {
   }, []);
 
   const handleLogin = () => {
-    // Auth service will handle state updates
+    const currentState = authService.getCurrentState();
+    if (currentState.isAuthenticated) {
+      setCurrentPage("home");
+    }
   };
 
   const handleLogout = async () => {
@@ -119,6 +126,14 @@ export default function App() {
 
   const handleForgotPassword = () => {
     setCurrentPage("forgot-password");
+  };
+
+  const handleResetPassword = () => {
+    setCurrentPage("reset-password");
+  };
+
+  const handleNewPasswordRequired = () => {
+    setCurrentPage("new-password");
   };
 
   const handleBackToLogin = () => {
@@ -145,7 +160,6 @@ export default function App() {
     setCurrentPage("home");
   };
 
-  // Show loading while checking authentication
   if (authState.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -157,22 +171,31 @@ export default function App() {
     );
   }
 
-  // Show login or forgot password page if not authenticated
   if (!authState.isAuthenticated) {
     if (currentPage === "forgot-password") {
       return (
         <ForgotPasswordPage onBackToLogin={handleBackToLogin} />
       );
     }
+    if (currentPage === "reset-password") {
+      return (
+        <ResetPasswordPage onBackToLogin={handleBackToLogin} />
+      );
+    }
+    if (currentPage === "new-password") {
+      return (
+        <NewPasswordPage onSuccess={handleLogin} />
+      );
+    }
     return (
       <LoginPage
         onLogin={handleLogin}
         onForgotPassword={handleForgotPassword}
+        onNewPasswordRequired={handleNewPasswordRequired}
       />
     );
   }
 
-  // Show main application with layout
   return (
     <Layout
       currentPage={currentPage}
