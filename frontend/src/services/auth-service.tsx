@@ -1,4 +1,4 @@
-import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
+import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword, confirmSignIn } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 
 export interface User {
@@ -87,7 +87,26 @@ export const authService = {
   async signIn({ email, password }: { email: string; password: string }) {
     try {
       updateState({ isLoading: true, error: null });
-      await signIn({ username: email, password });
+      
+      // Check if user is already authenticated
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          await initializeAuth();
+          return { success: true };
+        }
+      } catch {
+        // User not authenticated, proceed with sign in
+      }
+      
+      const result = await signIn({ username: email, password });
+      
+      // Check if new password is required
+      if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        updateState({ isLoading: false });
+        return { success: false, requiresNewPassword: true };
+      }
+      
       return { success: true };
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -98,6 +117,25 @@ export const authService = {
       return { 
         success: false, 
         error: error.message || 'Sign in failed' 
+      };
+    }
+  },
+
+  async confirmNewPassword({ newPassword }: { newPassword: string }) {
+    try {
+      updateState({ isLoading: true, error: null });
+      await confirmSignIn({ challengeResponse: newPassword });
+      await initializeAuth();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Confirm new password error:', error);
+      updateState({ 
+        error: error.message || 'Failed to set new password',
+        isLoading: false,
+      });
+      return { 
+        success: false, 
+        error: error.message || 'Failed to set new password' 
       };
     }
   },
