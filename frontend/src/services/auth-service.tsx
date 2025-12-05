@@ -33,16 +33,10 @@ const updateState = (newState: Partial<AuthState>) => {
 
 // Initialize authentication
 const initializeAuth = async () => {
-  console.log('🔍 initializeAuth called');
   try {
     updateState({ isLoading: true });
-    console.log('🔍 Calling getCurrentUser...');
     const user = await getCurrentUser();
-    console.log('✅ getCurrentUser success:', user);
-    
-    console.log('🔍 Calling fetchUserAttributes...');
     const attributes = await fetchUserAttributes();
-    console.log('✅ fetchUserAttributes success:', attributes);
     
     updateState({
       isAuthenticated: true,
@@ -55,9 +49,8 @@ const initializeAuth = async () => {
       isLoading: false,
       error: null,
     });
-    console.log('✅ Auth state updated - authenticated');
   } catch (error) {
-    console.log('❌ User not authenticated:', error);
+    console.log('User not authenticated:', error);
     updateState({ 
       isAuthenticated: false, 
       user: null, 
@@ -94,13 +87,11 @@ export const authService = {
   async signIn({ email, password }: { email: string; password: string }) {
     try {
       updateState({ isLoading: true, error: null });
-      console.log('🔍 signIn called for:', email);
       
       // Check if user is already authenticated
       try {
         const currentUser = await getCurrentUser();
         if (currentUser) {
-          console.log('✅ User already authenticated');
           await initializeAuth();
           return { success: true };
         }
@@ -108,9 +99,7 @@ export const authService = {
         // User not authenticated, proceed with sign in
       }
       
-      console.log('🔍 Calling Amplify signIn...');
       const result = await signIn({ username: email, password });
-      console.log('✅ signIn result:', result);
       
       // Check if new password is required
       if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
@@ -118,12 +107,10 @@ export const authService = {
         return { success: false, requiresNewPassword: true };
       }
       
-      console.log('🔍 Calling initializeAuth after signIn...');
       await initializeAuth();
-      console.log('✅ signIn complete');
       return { success: true };
     } catch (error: any) {
-      console.error('❌ Sign in error:', error);
+      console.error('Sign in error:', error);
       updateState({ 
         error: error.message || 'Sign in failed',
         isLoading: false,
