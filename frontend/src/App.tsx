@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./components/LoginPage";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
@@ -11,17 +12,6 @@ import { LawyersPage } from "./components/LawyersPage";
 import { AddClientPage } from "./components/AddClientPage";
 import { Toaster } from "./components/ui/sonner";
 import { authService } from "./services/auth-service";
-
-type Page =
-  | "login"
-  | "forgot-password"
-  | "reset-password"
-  | "new-password"
-  | "home"
-  | "cases"
-  | "about"
-  | "lawyers"
-  | "add-client";
 
 interface Case {
   caseId: string;
@@ -90,8 +80,36 @@ const initialCases: Case[] = [
   },
 ];
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>("login");
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const [authState, setAuthState] = useState(authService.getCurrentState());
+  
+  useEffect(() => {
+    const unsubscribe = authService.subscribe((state) => {
+      setAuthState(state);
+    });
+    return unsubscribe;
+  }, []);
+  
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!authState.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function AppContent() {
+  const navigate = useNavigate();
   const [authState, setAuthState] = useState(authService.getCurrentState());
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [cases, setCases] = useState<Case[]>(initialCases);
@@ -99,45 +117,15 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = authService.subscribe((state) => {
       setAuthState(state);
-      if (state.isAuthenticated && !state.isLoading) {
-        setCurrentPage("home");
-      } else if (!state.isAuthenticated && !state.isLoading) {
-        setCurrentPage("login");
+      if (!state.isAuthenticated && !state.isLoading) {
+        navigate("/login", { replace: true });
       }
     });
-
     return unsubscribe;
-  }, []);
-
-  const handleLogin = () => {
-    const currentState = authService.getCurrentState();
-    if (currentState.isAuthenticated) {
-      setCurrentPage("home");
-    }
-  };
+  }, [navigate]);
 
   const handleLogout = async () => {
     await authService.signOut();
-  };
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page as Page);
-  };
-
-  const handleForgotPassword = () => {
-    setCurrentPage("forgot-password");
-  };
-
-  const handleResetPassword = () => {
-    setCurrentPage("reset-password");
-  };
-
-  const handleNewPasswordRequired = () => {
-    setCurrentPage("new-password");
-  };
-
-  const handleBackToLogin = () => {
-    setCurrentPage("login");
   };
 
   const handleAddClient = (
@@ -157,72 +145,29 @@ export default function App() {
 
     setClients([...clients, newClient]);
     setCases([...cases, ...newCases]);
-    setCurrentPage("home");
+    navigate("/");
   };
 
-  if (authState.isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!authState.isAuthenticated) {
-    if (currentPage === "forgot-password") {
-      return (
-        <ForgotPasswordPage onBackToLogin={handleBackToLogin} />
-      );
-    }
-    if (currentPage === "reset-password") {
-      return (
-        <ResetPasswordPage onBackToLogin={handleBackToLogin} />
-      );
-    }
-    if (currentPage === "new-password") {
-      return (
-        <NewPasswordPage onSuccess={handleLogin} />
-      );
-    }
-    return (
-      <LoginPage
-        onLogin={handleLogin}
-        onForgotPassword={handleForgotPassword}
-        onNewPasswordRequired={handleNewPasswordRequired}
-      />
-    );
-  }
-
   return (
-    <Layout
-      currentPage={currentPage}
-      onNavigate={handleNavigate}
-      onLogout={handleLogout}
-    >
-      {currentPage === "home" && (
-        <Dashboard
-          clients={clients}
-          cases={cases}
-          onNavigateToAddClient={() =>
-            setCurrentPage("add-client")
-          }
-        />
-      )}
-      {currentPage === "cases" && (
-        <CasesPage cases={cases} clients={clients} />
-      )}
-      {currentPage === "about" && <AboutPage />}
-      {currentPage === "lawyers" && <LawyersPage />}
-      {currentPage === "add-client" && (
-        <AddClientPage
-          onAddClient={handleAddClient}
-          onBack={() => setCurrentPage("home")}
-        />
-      )}
-      <Toaster />
-    </Layout>
+    <Routes>
+      <Route path="/login" element={<LoginPage onLogin={() => navigate("/")} onForgotPassword={() => navigate("/forgot-password")} onNewPasswordRequired={() => navigate("/new-password")} />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage onBackToLogin={() => navigate("/login")} />} />
+      <Route path="/reset-password" element={<ResetPasswordPage onBackToLogin={() => navigate("/login")} />} />
+      <Route path="/new-password" element={<NewPasswordPage onSuccess={() => navigate("/")} />} />
+      
+      <Route path="/" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><Dashboard clients={clients} cases={cases} onNavigateToAddClient={() => navigate("/add-client")} /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/cases" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><CasesPage cases={cases} clients={clients} /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/about" element={<ProtectedRoute><Layout currentPage="about" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AboutPage /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/lawyers" element={<ProtectedRoute><Layout currentPage="lawyers" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><LawyersPage /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/add-client" element={<ProtectedRoute><Layout currentPage="add-client" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AddClientPage onAddClient={handleAddClient} onBack={() => navigate("/")} /><Toaster /></Layout></ProtectedRoute>} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
