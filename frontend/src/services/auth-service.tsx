@@ -121,6 +121,25 @@ export const authService = {
     }
   },
 
+  async confirmNewPassword({ newPassword }: { newPassword: string }) {
+    try {
+      updateState({ isLoading: true, error: null });
+      await confirmSignIn({ challengeResponse: newPassword });
+      await initializeAuth();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Confirm new password error:', error);
+      updateState({ 
+        error: error.message || 'Failed to set new password',
+        isLoading: false,
+      });
+      return { 
+        success: false, 
+        error: error.message || 'Failed to set new password' 
+      };
+    }
+  },
+
   async signOut() {
     try {
       await signOut();
