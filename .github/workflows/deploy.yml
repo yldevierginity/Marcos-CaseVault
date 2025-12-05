@@ -107,7 +107,7 @@ jobs:
           VITE_AWS_IDENTITY_POOL_ID=${{ steps.outputs.outputs.identity_pool_id }}
           VITE_AWS_API_GATEWAY_URL=${{ steps.outputs.outputs.api_endpoint }}
           EOF
-          npm ci
+          npm install
           npm run build
       
       - name: Upload build artifacts
