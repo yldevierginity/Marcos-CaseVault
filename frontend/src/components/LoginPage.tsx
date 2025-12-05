@@ -4,6 +4,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { authService } from "../services/auth-service";
+import { validateGmailDomain } from "../config/aws-config";
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -13,10 +15,32 @@ interface LoginPageProps {
 export function LoginPage({ onLogin, onForgotPassword }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin();
+    setError("");
+    
+    if (!validateGmailDomain(email)) {
+      setError("Please use a Gmail address to sign in.");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const result = await authService.signIn({ email, password });
+      if (result.success) {
+        onLogin();
+      } else {
+        setError(result.error || "Sign in failed");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,15 +59,21 @@ export function LoginPage({ onLogin, onForgotPassword }: LoginPageProps) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Enter your Gmail address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -55,6 +85,7 @@ export function LoginPage({ onLogin, onForgotPassword }: LoginPageProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="flex justify-end">
@@ -62,12 +93,17 @@ export function LoginPage({ onLogin, onForgotPassword }: LoginPageProps) {
                 type="button"
                 onClick={onForgotPassword}
                 className="text-sm text-accent hover:underline"
+                disabled={isLoading}
               >
                 Forgot Password?
               </button>
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-secondary">
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-secondary"
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
         </CardContent>

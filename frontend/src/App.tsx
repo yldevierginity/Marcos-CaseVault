@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./components/LoginPage";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
@@ -8,6 +8,7 @@ import { AboutPage } from "./components/AboutPage";
 import { LawyersPage } from "./components/LawyersPage";
 import { AddClientPage } from "./components/AddClientPage";
 import { Toaster } from "./components/ui/sonner";
+import { authService } from "./services/auth-service";
 
 type Page =
   | "login"
@@ -69,63 +70,6 @@ const initialClients: Client[] = [
     opposingParties: "ABC Corporation",
     notes: "Prefers morning appointments",
   },
-  {
-    clientId: "CL-002",
-    firstName: "Emily",
-    middleName: "Rose",
-    lastName: "Roberts",
-    dateOfBirth: "1990-07-22",
-    civilStatus: "Single",
-    phoneNumber: "(555) 123-4502",
-    email: "emily.roberts@email.com",
-    address: {
-      street: "456 Maple Avenue",
-      city: "Brooklyn",
-      state: "NY",
-      zip: "11201",
-    },
-    dateAdded: "2025-02-05",
-    opposingParties: "Smith Family Trust",
-    notes: "Urgent case, needs quick resolution",
-  },
-  {
-    clientId: "CL-003",
-    firstName: "David",
-    middleName: "",
-    lastName: "Martinez",
-    dateOfBirth: "1978-11-30",
-    civilStatus: "Divorced",
-    phoneNumber: "(555) 123-4503",
-    email: "david.martinez@email.com",
-    address: {
-      street: "789 Pine Road",
-      city: "Queens",
-      state: "NY",
-      zip: "11354",
-    },
-    dateAdded: "2025-02-15",
-    opposingParties: "XYZ Industries",
-    notes: "Former client, returning for new matter",
-  },
-  {
-    clientId: "CL-004",
-    firstName: "Lisa",
-    middleName: "Ann",
-    lastName: "Thompson",
-    dateOfBirth: "1965-05-18",
-    civilStatus: "Widowed",
-    phoneNumber: "(555) 123-4504",
-    email: "lisa.thompson@email.com",
-    address: {
-      street: "321 Elm Street",
-      city: "Manhattan",
-      state: "NY",
-      zip: "10022",
-    },
-    dateAdded: "2024-12-20",
-    opposingParties: "",
-    notes: "Estate planning for multiple properties",
-  },
 ];
 
 const initialCases: Case[] = [
@@ -140,67 +84,33 @@ const initialCases: Case[] = [
       "Client disputes contract terms regarding intellectual property rights and payment schedule.",
     creationDate: "2025-01-15",
   },
-  {
-    caseId: "CS-002",
-    clientId: "CL-002",
-    lawyerAssigned: "Michael Chen",
-    caseTitle: "Property Settlement Agreement",
-    caseType: "Property Law",
-    status: "pending",
-    description:
-      "Negotiating property division with Smith Family Trust regarding inherited assets.",
-    creationDate: "2025-02-08",
-  },
-  {
-    caseId: "CS-003",
-    clientId: "CL-003",
-    lawyerAssigned: "Jennifer Lopez",
-    caseTitle: "Employment Discrimination Case",
-    caseType: "Employment Law",
-    status: "active",
-    description:
-      "Client alleges wrongful termination and discrimination based on age.",
-    creationDate: "2025-02-20",
-  },
-  {
-    caseId: "CS-004",
-    clientId: "CL-004",
-    lawyerAssigned: "Robert Johnson",
-    caseTitle: "Estate Planning & Will Creation",
-    caseType: "Estate Planning",
-    status: "closed",
-    description:
-      "Comprehensive estate planning including will, trust, and power of attorney documents.",
-    creationDate: "2024-12-22",
-  },
-  {
-    caseId: "CS-005",
-    clientId: "CL-001",
-    lawyerAssigned: "Sarah Mitchell",
-    caseTitle: "Business Formation LLC",
-    caseType: "Business Formation",
-    status: "pending",
-    description:
-      "Setting up new LLC for client's consulting business.",
-    creationDate: "2025-03-01",
-  },
 ];
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("login");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [clients, setClients] =
-    useState<Client[]>(initialClients);
+  const [authState, setAuthState] = useState(authService.getCurrentState());
+  const [clients, setClients] = useState<Client[]>(initialClients);
   const [cases, setCases] = useState<Case[]>(initialCases);
 
+  useEffect(() => {
+    const unsubscribe = authService.subscribe((state) => {
+      setAuthState(state);
+      if (state.isAuthenticated) {
+        setCurrentPage("home");
+      } else {
+        setCurrentPage("login");
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
   const handleLogin = () => {
-    setIsAuthenticated(true);
-    setCurrentPage("home");
+    // Auth service will handle state updates
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentPage("login");
+  const handleLogout = async () => {
+    await authService.signOut();
   };
 
   const handleNavigate = (page: string) => {
@@ -219,12 +129,10 @@ export default function App() {
     client: Client,
     clientCases: Omit<Case, "clientId" | "caseId">[],
   ) => {
-    // Generate new client ID
     const clientNum = clients.length + 1;
     const newClientId = `CL-${clientNum.toString().padStart(3, "0")}`;
     const newClient = { ...client, clientId: newClientId };
 
-    // Generate new case IDs
     const caseNum = cases.length + 1;
     const newCases = clientCases.map((case_, index) => ({
       ...case_,
@@ -237,8 +145,20 @@ export default function App() {
     setCurrentPage("home");
   };
 
+  // Show loading while checking authentication
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show login or forgot password page if not authenticated
-  if (!isAuthenticated) {
+  if (!authState.isAuthenticated) {
     if (currentPage === "forgot-password") {
       return (
         <ForgotPasswordPage onBackToLogin={handleBackToLogin} />
