@@ -1,4 +1,4 @@
-import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword, confirmSignIn } from 'aws-amplify/auth';
+import { signIn, signOut, getCurrentUser, fetchUserAttributes, resetPassword, confirmResetPassword, confirmSignIn } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 
 export interface User {
@@ -33,24 +33,31 @@ const updateState = (newState: Partial<AuthState>) => {
 
 // Initialize authentication
 const initializeAuth = async () => {
+  console.log('🔍 initializeAuth called');
   try {
     updateState({ isLoading: true });
+    console.log('🔍 Calling getCurrentUser...');
     const user = await getCurrentUser();
-    if (user) {
-      updateState({
-        isAuthenticated: true,
-        user: {
-          username: user.username,
-          email: user.signInDetails?.loginId || user.username,
-          firstName: (user as any).attributes?.given_name,
-          lastName: (user as any).attributes?.family_name,
-        },
-        isLoading: false,
-        error: null,
-      });
-    }
+    console.log('✅ getCurrentUser success:', user);
+    
+    console.log('🔍 Calling fetchUserAttributes...');
+    const attributes = await fetchUserAttributes();
+    console.log('✅ fetchUserAttributes success:', attributes);
+    
+    updateState({
+      isAuthenticated: true,
+      user: {
+        username: user.username,
+        email: attributes.email || user.signInDetails?.loginId || user.username,
+        firstName: attributes.given_name,
+        lastName: attributes.family_name,
+      },
+      isLoading: false,
+      error: null,
+    });
+    console.log('✅ Auth state updated - authenticated');
   } catch (error) {
-    console.log('User not authenticated:', error);
+    console.log('❌ User not authenticated:', error);
     updateState({ 
       isAuthenticated: false, 
       user: null, 
@@ -87,11 +94,13 @@ export const authService = {
   async signIn({ email, password }: { email: string; password: string }) {
     try {
       updateState({ isLoading: true, error: null });
+      console.log('🔍 signIn called for:', email);
       
       // Check if user is already authenticated
       try {
         const currentUser = await getCurrentUser();
         if (currentUser) {
+          console.log('✅ User already authenticated');
           await initializeAuth();
           return { success: true };
         }
@@ -99,7 +108,9 @@ export const authService = {
         // User not authenticated, proceed with sign in
       }
       
+      console.log('🔍 Calling Amplify signIn...');
       const result = await signIn({ username: email, password });
+      console.log('✅ signIn result:', result);
       
       // Check if new password is required
       if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
@@ -107,9 +118,12 @@ export const authService = {
         return { success: false, requiresNewPassword: true };
       }
       
+      console.log('🔍 Calling initializeAuth after signIn...');
+      await initializeAuth();
+      console.log('✅ signIn complete');
       return { success: true };
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      console.error('❌ Sign in error:', error);
       updateState({ 
         error: error.message || 'Sign in failed',
         isLoading: false,
@@ -192,8 +206,11 @@ export const authService = {
 
   getCurrentState() {
     return currentState;
+  },
+
+  initialize() {
+    return initializeAuth();
   }
 };
 
-// Initialize authentication on module load
-initializeAuth();
+// Don't initialize here - let the app initialize it after Amplify is configured
