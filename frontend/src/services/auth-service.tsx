@@ -1,4 +1,4 @@
-import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
+import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword, confirmSignIn } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 
 export interface User {
