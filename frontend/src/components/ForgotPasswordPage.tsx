@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { authService } from "../services/auth-service";
+import { validateGmailDomain } from "../config/aws-config";
 
 interface ForgotPasswordPageProps {
   onBackToLogin: () => void;
@@ -20,6 +21,12 @@ export function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPageProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    
+    if (!validateGmailDomain(email)) {
+      setError("Please use a Gmail address.");
+      setLoading(false);
+      return;
+    }
     
     try {
       const result = await authService.forgotPassword(email);
@@ -47,41 +54,44 @@ export function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPageProps) {
           <CardTitle>Reset Your Password</CardTitle>
           <CardDescription>
             {!submitted
-              ? "Enter your email address and we'll send you a link to reset your password"
+              ? "Enter your Gmail address and we'll send you a reset code"
               : "Check your email for password reset instructions"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!submitted ? (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="Enter your Gmail address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
-              {error && (
-                <div className="text-red-600 text-sm">{error}</div>
-              )}
               <Button 
                 type="submit" 
                 className="w-full bg-primary hover:bg-secondary"
                 disabled={loading}
               >
-                {loading ? "Sending..." : "Send Reset Link"}
+                {loading ? "Sending..." : "Send Reset Code"}
               </Button>
             </form>
           ) : (
             <div className="text-center space-y-4">
-              <div className="bg-accent/10 border border-accent rounded-lg p-4">
-                <p className="text-sm">
-                  If an account exists for <strong>{email}</strong>, you will
-                  receive a password reset email shortly.
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">
+                  A reset code has been sent to <strong>{email}</strong>. 
+                  Please check your email and use the code to reset your password.
                 </p>
               </div>
             </div>
@@ -90,6 +100,7 @@ export function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPageProps) {
             <button
               onClick={onBackToLogin}
               className="flex items-center gap-2 text-sm text-accent hover:underline mx-auto"
+              disabled={loading}
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Login

@@ -5,39 +5,39 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { authService } from "../services/auth-service";
-import { validateGmailDomain } from "../config/aws-config";
 
-interface LoginPageProps {
-  onLogin: () => void;
-  onForgotPassword: () => void;
-  onNewPasswordRequired: () => void;
+interface NewPasswordPageProps {
+  onSuccess: () => void;
 }
 
-export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: LoginPageProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export function NewPasswordPage({ onSuccess }: NewPasswordPageProps) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
-    if (!validateGmailDomain(email)) {
-      setError("Please use a Gmail address to sign in.");
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      const result = await authService.signIn({ email, password });
+      const result = await authService.confirmNewPassword({ newPassword });
       if (result.success) {
-        setTimeout(() => onLogin(), 100);
-      } else if (result.requiresNewPassword) {
-        onNewPasswordRequired();
+        onSuccess();
       } else {
-        setError(result.error || "Sign in failed");
+        setError(result.error || "Failed to set new password");
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -55,9 +55,9 @@ export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: 
               <Scale className="w-12 h-12 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle>Neyra Marcos Mendez Law Office</CardTitle>
+          <CardTitle>Set New Password</CardTitle>
           <CardDescription>
-            Sign in to access your case management dashboard
+            Please set a new password for your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,46 +67,41 @@ export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: 
                 {error}
               </div>
             )}
+            
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="newPassword">New Password</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your Gmail address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
+                id="newPassword"
                 type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                minLength={8}
               />
             </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={onForgotPassword}
-                className="text-sm text-accent hover:underline"
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
                 disabled={isLoading}
-              >
-                Forgot Password?
-              </button>
+                minLength={8}
+              />
             </div>
+
             <Button 
               type="submit" 
               className="w-full bg-primary hover:bg-secondary"
               disabled={isLoading}
             >
-              {isLoading ? "Signing In..." : "Sign In"}
+              {isLoading ? "Setting Password..." : "Set New Password"}
             </Button>
           </form>
         </CardContent>
