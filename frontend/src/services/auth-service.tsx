@@ -87,6 +87,18 @@ export const authService = {
   async signIn({ email, password }: { email: string; password: string }) {
     try {
       updateState({ isLoading: true, error: null });
+      
+      // Check if user is already authenticated
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          await initializeAuth();
+          return { success: true };
+        }
+      } catch {
+        // User not authenticated, proceed with sign in
+      }
+      
       await signIn({ username: email, password });
       return { success: true };
     } catch (error: any) {
