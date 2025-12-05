@@ -1,5 +1,15 @@
-import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
+import { signIn, signOut, getCurrentUser, resetPassword, confirmResetPassword, confirmSignIn } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
+import { Amplify } from 'aws-amplify';
+import { awsConfig, validateEnvironment } from '../config/aws-config';
+
+// Ensure Amplify is configured before using auth services
+try {
+  validateEnvironment();
+  Amplify.configure(awsConfig);
+} catch (error) {
+  console.error('Failed to configure Amplify:', error);
+}
 
 export interface User {
   username: string;
@@ -14,6 +24,8 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  challengeName?: string;
+  challengeParameters?: any;
 }
 
 const initialState: AuthState = {
@@ -87,8 +99,25 @@ export const authService = {
   async signIn({ email, password }: { email: string; password: string }) {
     try {
       updateState({ isLoading: true, error: null });
-      await signIn({ username: email, password });
-      return { success: true };
+      const result = await signIn({ username: email, password });
+      
+      if (result.isSignedIn) {
+        await initializeAuth();
+        return { success: true };
+      } else if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        updateState({ 
+          challengeName: 'NEW_PASSWORD_REQUIRED',
+          challengeParameters: result.nextStep.missingAttributes,
+          isLoading: false 
+        });
+        return { 
+          success: false, 
+          requiresNewPassword: true,
+          error: 'New password required' 
+        };
+      }
+      
+      return { success: false, error: 'Sign in incomplete' };
     } catch (error: any) {
       console.error('Sign in error:', error);
       updateState({ 
@@ -98,6 +127,25 @@ export const authService = {
       return { 
         success: false, 
         error: error.message || 'Sign in failed' 
+      };
+    }
+  },
+
+  async confirmNewPassword({ newPassword }: { newPassword: string }) {
+    try {
+      updateState({ isLoading: true, error: null });
+      await confirmSignIn({ challengeResponse: newPassword });
+      await initializeAuth();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Confirm new password error:', error);
+      updateState({ 
+        error: error.message || 'Password confirmation failed',
+        isLoading: false,
+      });
+      return { 
+        success: false, 
+        error: error.message || 'Password confirmation failed' 
       };
     }
   },
