@@ -17,10 +17,18 @@ export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    const savedError = sessionStorage.getItem("loginError");
+    if (savedError) {
+      sessionStorage.removeItem("loginError");
+      return savedError;
+    }
+    return "";
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setError("");
     
     if (!validateGmailDomain(email)) {
@@ -30,20 +38,21 @@ export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: 
 
     setIsLoading(true);
     
-    try {
-      const result = await authService.signIn({ email, password });
+    authService.signIn({ email, password }).then((result) => {
+      setIsLoading(false);
       if (result.success) {
         setTimeout(() => onLogin(), 100);
       } else if (result.requiresNewPassword) {
         onNewPasswordRequired();
       } else {
-        setError(result.error || "Sign in failed");
+        sessionStorage.setItem("loginError", "Incorrect username or password.");
+        setError("Incorrect username or password.");
       }
-    } catch (err) {
-      setError("An unexpected error occurred");
-    } finally {
+    }).catch(() => {
       setIsLoading(false);
-    }
+      sessionStorage.setItem("loginError", "Incorrect username or password.");
+      setError("Incorrect username or password.");
+    });
   };
 
   return (
@@ -63,8 +72,8 @@ export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
-                {error}
+              <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-300">
+                ⚠️ {error}
               </div>
             )}
             <div className="space-y-2">
