@@ -99,7 +99,14 @@ export const authService = {
         // User not authenticated, proceed with sign in
       }
       
-      await signIn({ username: email, password });
+      const result = await signIn({ username: email, password });
+      
+      // Check if new password is required
+      if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        updateState({ isLoading: false });
+        return { success: false, requiresNewPassword: true };
+      }
+      
       return { success: true };
     } catch (error: any) {
       console.error('Sign in error:', error);
