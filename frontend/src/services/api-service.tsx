@@ -1,5 +1,4 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { get } from 'aws-amplify/api';
 
 interface ApiResponse<T> {
   data?: T;
@@ -7,7 +6,7 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-const API_NAME = 'LawFirmAPI';
+const API_URL = import.meta.env.VITE_API_GATEWAY_URL;
 
 async function callApi<T>(
   path: string, 
@@ -18,7 +17,8 @@ async function callApi<T>(
     const session = await fetchAuthSession();
     const token = session.tokens?.idToken?.toString();
 
-    const requestOptions: any = {
+    const requestOptions: RequestInit = {
+      method,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -29,31 +29,10 @@ async function callApi<T>(
       requestOptions.body = JSON.stringify(body);
     }
 
-    let response;
-    if (method === 'GET') {
-      response = await get({
-        apiName: API_NAME,
-        path,
-        options: requestOptions,
-      }).response;
-    } else {
-      // For POST, PUT, DELETE - you'd need to implement these with Amplify
-      // For now, we'll use fetch as a fallback
-      const apiUrl = `${import.meta.env.VITE_API_GATEWAY_URL}${path}`;
-      response = await fetch(apiUrl, {
-        method,
-        ...requestOptions,
-      });
-    }
+    const response = await fetch(`${API_URL}${path}`, requestOptions);
+    const data = await response.json();
 
-    let data;
-    if ('json' in response && typeof response.json === 'function') {
-      data = await response.json();
-    } else {
-      data = await (response as any).body;
-    }
-
-    if (!('ok' in response ? response.ok : true)) {
+    if (!response.ok) {
       return { 
         error: data?.message || data?.error || 'API request failed',
         message: data?.message 

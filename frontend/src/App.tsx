@@ -11,7 +11,9 @@ import { AboutPage } from "./components/AboutPage";
 import { LawyersPage } from "./components/LawyersPage";
 import { AddClientPage } from "./components/AddClientPage";
 import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 import { authService } from "./services/auth-service";
+import { apiService } from "./services/api-service";
 
 interface Case {
   caseId: string;
@@ -44,42 +46,6 @@ interface Client {
   notes: string;
 }
 
-const initialClients: Client[] = [
-  {
-    clientId: "CL-001",
-    firstName: "John",
-    middleName: "Michael",
-    lastName: "Anderson",
-    dateOfBirth: "1985-03-15",
-    civilStatus: "Married",
-    phoneNumber: "(555) 123-4501",
-    email: "john.anderson@email.com",
-    address: {
-      street: "123 Oak Street",
-      city: "New York",
-      state: "NY",
-      zip: "10001",
-    },
-    dateAdded: "2025-01-10",
-    opposingParties: "ABC Corporation",
-    notes: "Prefers morning appointments",
-  },
-];
-
-const initialCases: Case[] = [
-  {
-    caseId: "CS-001",
-    clientId: "CL-001",
-    lawyerAssigned: "Sarah Mitchell",
-    caseTitle: "Contract Dispute with ABC Corp",
-    caseType: "Contract Dispute",
-    status: "active",
-    description:
-      "Client disputes contract terms regarding intellectual property rights and payment schedule.",
-    creationDate: "2025-01-15",
-  },
-];
-
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState(authService.getCurrentState());
   
@@ -111,8 +77,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const navigate = useNavigate();
   const [authState, setAuthState] = useState(authService.getCurrentState());
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [cases, setCases] = useState<Case[]>(initialCases);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = authService.subscribe((state) => {
@@ -124,28 +91,92 @@ function AppContent() {
     return unsubscribe;
   }, [navigate]);
 
+  // Load data from API on mount
+  useEffect(() => {
+    const loadData = async () => {
+      if (!authState.isAuthenticated) return;
+      
+      setIsLoading(true);
+      try {
+        const [clientsResponse, casesResponse] = await Promise.all([
+          apiService.getClients(1, 100),
+          apiService.getCases(1, 100),
+        ]);
+
+        if (clientsResponse.data) {
+          setClients(clientsResponse.data.items || clientsResponse.data);
+        }
+        if (casesResponse.data) {
+          setCases(casesResponse.data.items || casesResponse.data);
+        }
+      } catch (error: any) {
+        toast.error("Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [authState.isAuthenticated]);
+
   const handleLogout = async () => {
     await authService.signOut();
   };
 
-  const handleAddClient = (
+  const handleAddClient = async (
     client: Client,
     clientCases: Omit<Case, "clientId" | "caseId">[],
   ) => {
-    const clientNum = clients.length + 1;
-    const newClientId = `CL-${clientNum.toString().padStart(3, "0")}`;
-    const newClient = { ...client, clientId: newClientId };
+    try {
+      // Create client in backend
+      const clientResponse = await apiService.createClient({
+        firstName: client.firstName,
+        middleName: client.middleName,
+        lastName: client.lastName,
+        dateOfBirth: client.dateOfBirth,
+        civilStatus: client.civilStatus,
+        phoneNumber: client.phoneNumber,
+        email: client.email,
+        address: client.address,
+        opposingParties: client.opposingParties,
+        notes: client.notes,
+      });
 
-    const caseNum = cases.length + 1;
-    const newCases = clientCases.map((case_, index) => ({
-      ...case_,
-      clientId: newClientId,
-      caseId: `CS-${(caseNum + index).toString().padStart(3, "0")}`,
-    }));
+      if (clientResponse.error) {
+        toast.error(clientResponse.error);
+        return;
+      }
 
-    setClients([...clients, newClient]);
-    setCases([...cases, ...newCases]);
-    navigate("/");
+      const newClient = clientResponse.data;
+
+      // Create cases for the client
+      const newCases: Case[] = [];
+      for (const caseData of clientCases) {
+        const caseResponse = await apiService.createCase({
+          clientId: newClient.clientId,
+          lawyerAssigned: caseData.lawyerAssigned,
+          caseTitle: caseData.caseTitle,
+          caseType: caseData.caseType,
+          status: caseData.status,
+          description: caseData.description,
+        });
+
+        if (caseResponse.error) {
+          toast.error(`Failed to create case: ${caseResponse.error}`);
+        } else {
+          newCases.push(caseResponse.data);
+        }
+      }
+
+      // Update local state
+      setClients([...clients, newClient]);
+      setCases([...cases, ...newCases]);
+      
+      toast.success("Client and cases added successfully!");
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add client");
+    }
   };
 
   return (
@@ -155,8 +186,8 @@ function AppContent() {
       <Route path="/reset-password" element={<ResetPasswordPage onBackToLogin={() => navigate("/login")} />} />
       <Route path="/new-password" element={<NewPasswordPage onSuccess={() => navigate("/")} />} />
       
-      <Route path="/" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><Dashboard clients={clients} cases={cases} onNavigateToAddClient={() => navigate("/add-client")} /><Toaster /></Layout></ProtectedRoute>} />
-      <Route path="/cases" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><CasesPage cases={cases} clients={clients} /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <Dashboard clients={clients} cases={cases} onNavigateToAddClient={() => navigate("/add-client")} />}<Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/cases" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <CasesPage cases={cases} clients={clients} />}<Toaster /></Layout></ProtectedRoute>} />
       <Route path="/about" element={<ProtectedRoute><Layout currentPage="about" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AboutPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/lawyers" element={<ProtectedRoute><Layout currentPage="lawyers" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><LawyersPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/add-client" element={<ProtectedRoute><Layout currentPage="add-client" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AddClientPage onAddClient={handleAddClient} onBack={() => navigate("/")} /><Toaster /></Layout></ProtectedRoute>} />
