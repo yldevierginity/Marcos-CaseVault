@@ -133,7 +133,7 @@ resource "aws_api_gateway_integration_response" "clients_get_200" {
   http_method = aws_api_gateway_method.clients_get.http_method
   status_code = "200"
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "method.response.header.Access-Control-Allow-Origin"
+    "method.response.header.Access-Control-Allow-Origin" = "integration.response.header.Access-Control-Allow-Origin"
   }
   depends_on = [aws_api_gateway_integration.clients_get]
 }
@@ -144,7 +144,7 @@ resource "aws_api_gateway_integration_response" "clients_post_200" {
   http_method = aws_api_gateway_method.clients_post.http_method
   status_code = "200"
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "method.response.header.Access-Control-Allow-Origin"
+    "method.response.header.Access-Control-Allow-Origin" = "integration.response.header.Access-Control-Allow-Origin"
   }
   depends_on = [aws_api_gateway_integration.clients_post]
 }
@@ -155,7 +155,7 @@ resource "aws_api_gateway_integration_response" "cases_get_200" {
   http_method = aws_api_gateway_method.cases_get.http_method
   status_code = "200"
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "method.response.header.Access-Control-Allow-Origin"
+    "method.response.header.Access-Control-Allow-Origin" = "integration.response.header.Access-Control-Allow-Origin"
   }
   depends_on = [aws_api_gateway_integration.cases_get]
 }
@@ -166,7 +166,7 @@ resource "aws_api_gateway_integration_response" "cases_post_200" {
   http_method = aws_api_gateway_method.cases_post.http_method
   status_code = "200"
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "method.response.header.Access-Control-Allow-Origin"
+    "method.response.header.Access-Control-Allow-Origin" = "integration.response.header.Access-Control-Allow-Origin"
   }
   depends_on = [aws_api_gateway_integration.cases_post]
 }
