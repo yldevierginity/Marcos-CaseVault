@@ -70,6 +70,10 @@ resource "aws_lambda_function" "clients" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
@@ -96,6 +100,10 @@ resource "aws_lambda_function" "cases" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
@@ -122,6 +130,10 @@ resource "aws_lambda_function" "hearings" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
@@ -148,6 +160,10 @@ resource "aws_lambda_function" "users" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
@@ -174,6 +190,10 @@ resource "aws_lambda_function" "search" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
@@ -200,6 +220,10 @@ resource "aws_lambda_function" "notifications" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
@@ -226,6 +250,10 @@ resource "aws_lambda_function" "admin_logs" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
 
   environment {
     variables = {
