@@ -12,6 +12,19 @@ resource "aws_vpc_endpoint" "secretsmanager" {
   })
 }
 
+resource "aws_vpc_endpoint" "rds" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.rds"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-rds-endpoint"
+  })
+}
+
 resource "aws_security_group" "vpc_endpoints" {
   name_prefix = "${var.project_name}-vpc-endpoints-sg"
   vpc_id      = aws_vpc.main.id
