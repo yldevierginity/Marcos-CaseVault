@@ -157,6 +157,8 @@ resource "aws_api_gateway_integration_response" "options" {
 resource "aws_api_gateway_deployment" "main" {
   depends_on = [
     aws_api_gateway_integration_response.options,
+    aws_api_gateway_integration_response.clients_options,
+    aws_api_gateway_integration_response.cases_options,
     aws_api_gateway_integration.clients_get,
     aws_api_gateway_integration.clients_post,
     aws_api_gateway_integration.client_get,
