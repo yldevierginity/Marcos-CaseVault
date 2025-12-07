@@ -20,10 +20,11 @@ resource "aws_security_group" "rds" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lambda.id]
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow PostgreSQL from Lambda (public)"
   }
 
   egress {
@@ -99,6 +100,7 @@ resource "aws_rds_cluster_instance" "main" {
   instance_class     = "db.t3.medium"
   engine             = aws_rds_cluster.main.engine
   engine_version     = aws_rds_cluster.main.engine_version
+  publicly_accessible = true
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-aurora-instance-${count.index + 1}"
