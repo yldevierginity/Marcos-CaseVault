@@ -104,10 +104,10 @@ function AppContent() {
         ]);
 
         if (clientsResponse.data) {
-          setClients(clientsResponse.data.items || clientsResponse.data);
+          setClients(clientsResponse.data.clients || []);
         }
         if (casesResponse.data) {
-          setCases(casesResponse.data.items || casesResponse.data);
+          setCases(casesResponse.data.cases || []);
         }
       } catch (error: any) {
         toast.error("Failed to load data");

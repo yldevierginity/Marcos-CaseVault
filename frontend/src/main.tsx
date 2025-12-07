@@ -5,6 +5,6 @@ import "./config/amplify-config";
 import { authService } from "./services/auth-service";
 
 // Initialize auth after Amplify is configured
-authService.initialize();
+authService.initialize().catch(console.error);
 
 createRoot(document.getElementById("root")!).render(<App />);
