@@ -103,10 +103,15 @@ function AppContent() {
           apiService.getCases(1, 100),
         ]);
 
-        if (clientsResponse.data) {
+        if (clientsResponse.error) {
+          toast.error(`Failed to load clients: ${clientsResponse.error}`);
+        } else if (clientsResponse.data) {
           setClients(clientsResponse.data.clients || []);
         }
-        if (casesResponse.data) {
+        
+        if (casesResponse.error) {
+          toast.error(`Failed to load cases: ${casesResponse.error}`);
+        } else if (casesResponse.data) {
           setCases(casesResponse.data.cases || []);
         }
       } catch (error: any) {
