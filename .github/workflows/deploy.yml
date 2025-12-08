@@ -43,7 +43,7 @@ jobs:
           node-version: '18'
       
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq zip postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y jq zip
       
       - name: Bootstrap S3 backend (if needed)
         run: |
@@ -80,21 +80,21 @@ jobs:
           cd infrastructure
           terraform apply tfplan
       
-      - name: Initialize database schema
+      - name: Save database credentials for manual initialization
         if: ${{ !inputs.destroy }}
         run: |
           cd infrastructure
           DB_SECRET_ARN=$(terraform output -raw database_secret_arn)
           DB_ENDPOINT=$(terraform output -raw database_endpoint)
           
-          DB_CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_ARN" --query SecretString --output text)
-          DB_USERNAME=$(echo "$DB_CREDENTIALS" | jq -r '.username')
-          DB_PASSWORD=$(echo "$DB_CREDENTIALS" | jq -r '.password')
-          
-          export PGPASSWORD="$DB_PASSWORD"
-          cd ..
-          psql -h "$DB_ENDPOINT" -U "$DB_USERNAME" -d lawfirmdb -f database/schema.sql
-          echo "Database schema initialized successfully!"
+          echo "Database initialization required:"
+          echo "DB_SECRET_ARN=$DB_SECRET_ARN"
+          echo "DB_ENDPOINT=$DB_ENDPOINT"
+          echo ""
+          echo "Run this command manually from a machine with database access:"
+          echo "psql -h $DB_ENDPOINT -U <username> -d lawfirmdb -f database/schema.sql"
+          echo ""
+          echo "Or use the init-database.sh script with these values."
       
       - name: Terraform Destroy
         if: ${{ inputs.destroy }}
