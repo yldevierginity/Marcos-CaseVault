@@ -1,9 +1,8 @@
 import json
 import os
-from database_utils import DatabaseConnection, AdminLogger, get_user_from_cognito
+from database_utils import DatabaseConnection
 
 def create_cors_response(status_code: int, body: dict) -> dict:
-    """Create response with CORS headers"""
     return {
         'statusCode': status_code,
         'headers': {
@@ -17,27 +16,21 @@ def create_cors_response(status_code: int, body: dict) -> dict:
     }
 
 def lambda_handler(event, context):
-    """Lambda handler for cases CRUD operations"""
+    if event.get('httpMethod') == 'OPTIONS':
+        return create_cors_response(200, {'message': 'OK'})
     
     db = DatabaseConnection()
     
     try:
-        print(f"Event: {json.dumps(event)}")
-        
-        # Handle OPTIONS request
-        if event.get('httpMethod') == 'OPTIONS':
-            return create_cors_response(200, {'message': 'OK'})
+        conn = db.get_connection()
+        cursor = conn.cursor()
         
         http_method = event.get('httpMethod', 'GET')
         path_parameters = event.get('pathParameters') or {}
         case_id = path_parameters.get('id')
         
         if http_method == 'GET':
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            
             if case_id:
-                # Get specific case with client info
                 cursor.execute("""
                     SELECT c.case_id, c.client_id, c.case_title, c.case_type, c.status,
                            c.description, c.priority, c.estimated_value, c.start_date, c.end_date,
@@ -54,30 +47,28 @@ def lambda_handler(event, context):
                 
                 case = {
                     'caseId': str(row[0]),
-                    'clientId': str(row[1]) if row[1] else None,
-                    'caseTitle': row[2],
-                    'caseType': row[3],
-                    'status': row[4],
-                    'description': row[5],
-                    'priority': row[6],
-                    'estimatedValue': float(row[7]) if row[7] else None,
-                    'startDate': row[8].isoformat() if row[8] else None,
-                    'endDate': row[9].isoformat() if row[9] else None,
-                    'lawyerAssigned': row[10],
-                    'creationDate': row[11].isoformat() if row[11] else None,
-                    'updatedAt': row[12].isoformat() if row[12] else None,
+                    'clientId': str(row[1]) if row[1] else '',
+                    'caseTitle': row[2] or '',
+                    'caseType': row[3] or '',
+                    'status': row[4] or 'active',
+                    'description': row[5] or '',
+                    'priority': row[6] or 'medium',
+                    'estimatedValue': float(row[7]) if row[7] else 0,
+                    'startDate': row[8].isoformat() if row[8] else '',
+                    'endDate': row[9].isoformat() if row[9] else '',
+                    'lawyerAssigned': row[10] or '',
+                    'creationDate': row[11].isoformat() if row[11] else '',
+                    'updatedAt': row[12].isoformat() if row[12] else '',
                     'client': {
-                        'name': f"{row[13]} {row[14]}" if row[13] and row[14] else None,
-                        'email': row[15]
-                    } if row[13] else None,
+                        'name': f"{row[13]} {row[14]}" if row[13] and row[14] else '',
+                        'email': row[15] or ''
+                    },
                     'assigned_lawyer': {
-                        'name': row[10]
-                    } if row[10] else None
+                        'name': row[10] or ''
+                    }
                 }
-                
                 return create_cors_response(200, case)
             else:
-                # Get all cases with pagination
                 query_params = event.get('queryStringParameters') or {}
                 page = int(query_params.get('page', 1))
                 limit = int(query_params.get('limit', 100))
@@ -99,28 +90,27 @@ def lambda_handler(event, context):
                 for row in rows:
                     cases.append({
                         'caseId': str(row[0]),
-                        'clientId': str(row[1]) if row[1] else None,
-                        'caseTitle': row[2],
-                        'caseType': row[3],
-                        'status': row[4],
-                        'description': row[5],
-                        'priority': row[6],
-                        'estimatedValue': float(row[7]) if row[7] else None,
-                        'startDate': row[8].isoformat() if row[8] else None,
-                        'endDate': row[9].isoformat() if row[9] else None,
-                        'lawyerAssigned': row[10],
-                        'creationDate': row[11].isoformat() if row[11] else None,
-                        'updatedAt': row[12].isoformat() if row[12] else None,
+                        'clientId': str(row[1]) if row[1] else '',
+                        'caseTitle': row[2] or '',
+                        'caseType': row[3] or '',
+                        'status': row[4] or 'active',
+                        'description': row[5] or '',
+                        'priority': row[6] or 'medium',
+                        'estimatedValue': float(row[7]) if row[7] else 0,
+                        'startDate': row[8].isoformat() if row[8] else '',
+                        'endDate': row[9].isoformat() if row[9] else '',
+                        'lawyerAssigned': row[10] or '',
+                        'creationDate': row[11].isoformat() if row[11] else '',
+                        'updatedAt': row[12].isoformat() if row[12] else '',
                         'client': {
-                            'name': f"{row[13]} {row[14]}" if row[13] and row[14] else None,
-                            'email': row[15]
-                        } if row[13] else None,
+                            'name': f"{row[13]} {row[14]}" if row[13] and row[14] else '',
+                            'email': row[15] or ''
+                        },
                         'assigned_lawyer': {
-                            'name': row[10]
-                        } if row[10] else None
+                            'name': row[10] or ''
+                        }
                     })
                 
-                # Get total count
                 cursor.execute("SELECT COUNT(*) FROM cases")
                 total = cursor.fetchone()[0]
                 
@@ -134,34 +124,24 @@ def lambda_handler(event, context):
                 })
         
         elif http_method == 'POST':
-            # Handle case creation
-            body = {}
-            if event.get('body'):
-                try:
-                    body = json.loads(event['body'])
-                except:
-                    return create_cors_response(400, {'error': 'Invalid JSON body'})
+            body = json.loads(event.get('body', '{}'))
             
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            
-            # Insert new case
             cursor.execute("""
                 INSERT INTO cases (client_id, case_title, case_type, status, description,
                                  priority, estimated_value, start_date, end_date, lawyer_assigned)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING case_id, created_at
             """, (
-                body.get('clientId'),
-                body.get('caseTitle'),
-                body.get('caseType'),
+                body.get('clientId') or None,
+                body.get('caseTitle', ''),
+                body.get('caseType', ''),
                 body.get('status', 'active'),
-                body.get('description'),
+                body.get('description', ''),
                 body.get('priority', 'medium'),
-                body.get('estimatedValue'),
-                body.get('startDate'),
-                body.get('endDate'),
-                body.get('lawyerAssigned')
+                body.get('estimatedValue') or None,
+                body.get('startDate') or None,
+                body.get('endDate') or None,
+                body.get('lawyerAssigned', '')
             ))
             
             result = cursor.fetchone()
@@ -169,7 +149,7 @@ def lambda_handler(event, context):
             conn.commit()
             
             # Get client info for response
-            client_info = None
+            client_info = {'name': '', 'email': ''}
             if body.get('clientId'):
                 cursor.execute("""
                     SELECT first_name, last_name, email 
@@ -179,27 +159,27 @@ def lambda_handler(event, context):
                 if client_row:
                     client_info = {
                         'name': f"{client_row[0]} {client_row[1]}",
-                        'email': client_row[2]
+                        'email': client_row[2] or ''
                     }
             
             new_case = {
                 'caseId': str(case_id),
-                'clientId': body.get('clientId'),
-                'caseTitle': body.get('caseTitle'),
-                'caseType': body.get('caseType'),
+                'clientId': body.get('clientId', ''),
+                'caseTitle': body.get('caseTitle', ''),
+                'caseType': body.get('caseType', ''),
                 'status': body.get('status', 'active'),
-                'description': body.get('description'),
+                'description': body.get('description', ''),
                 'priority': body.get('priority', 'medium'),
-                'estimatedValue': body.get('estimatedValue'),
-                'startDate': body.get('startDate'),
-                'endDate': body.get('endDate'),
-                'lawyerAssigned': body.get('lawyerAssigned'),
+                'estimatedValue': body.get('estimatedValue', 0),
+                'startDate': body.get('startDate', ''),
+                'endDate': body.get('endDate', ''),
+                'lawyerAssigned': body.get('lawyerAssigned', ''),
                 'creationDate': created_at.isoformat(),
                 'updatedAt': created_at.isoformat(),
                 'client': client_info,
                 'assigned_lawyer': {
-                    'name': body.get('lawyerAssigned')
-                } if body.get('lawyerAssigned') else None
+                    'name': body.get('lawyerAssigned', '')
+                }
             }
             
             return create_cors_response(201, new_case)
@@ -208,15 +188,7 @@ def lambda_handler(event, context):
             if not case_id:
                 return create_cors_response(400, {'error': 'Case ID required'})
             
-            body = {}
-            if event.get('body'):
-                try:
-                    body = json.loads(event['body'])
-                except:
-                    return create_cors_response(400, {'error': 'Invalid JSON body'})
-            
-            conn = db.get_connection()
-            cursor = conn.cursor()
+            body = json.loads(event.get('body', '{}'))
             
             cursor.execute("""
                 UPDATE cases SET 
@@ -226,15 +198,15 @@ def lambda_handler(event, context):
                 WHERE case_id = %s
                 RETURNING updated_at
             """, (
-                body.get('caseTitle'),
-                body.get('caseType'),
-                body.get('status'),
-                body.get('description'),
-                body.get('priority'),
-                body.get('estimatedValue'),
-                body.get('startDate'),
-                body.get('endDate'),
-                body.get('lawyerAssigned'),
+                body.get('caseTitle', ''),
+                body.get('caseType', ''),
+                body.get('status', 'active'),
+                body.get('description', ''),
+                body.get('priority', 'medium'),
+                body.get('estimatedValue') or None,
+                body.get('startDate') or None,
+                body.get('endDate') or None,
+                body.get('lawyerAssigned', ''),
                 case_id
             ))
             
@@ -248,9 +220,6 @@ def lambda_handler(event, context):
         elif http_method == 'DELETE':
             if not case_id:
                 return create_cors_response(400, {'error': 'Case ID required'})
-            
-            conn = db.get_connection()
-            cursor = conn.cursor()
             
             cursor.execute("DELETE FROM cases WHERE case_id = %s", (case_id,))
             

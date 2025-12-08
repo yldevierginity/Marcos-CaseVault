@@ -1,9 +1,8 @@
 import json
 import os
-from database_utils import DatabaseConnection, AdminLogger, get_user_from_cognito
+from database_utils import DatabaseConnection
 
 def create_cors_response(status_code: int, body: dict) -> dict:
-    """Create response with CORS headers"""
     return {
         'statusCode': status_code,
         'headers': {
@@ -17,25 +16,21 @@ def create_cors_response(status_code: int, body: dict) -> dict:
     }
 
 def lambda_handler(event, context):
-    """Lambda handler for clients CRUD operations"""
+    if event.get('httpMethod') == 'OPTIONS':
+        return create_cors_response(200, {'message': 'OK'})
     
     db = DatabaseConnection()
     
     try:
-        # Handle OPTIONS request
-        if event.get('httpMethod') == 'OPTIONS':
-            return create_cors_response(200, {'message': 'OK'})
+        conn = db.get_connection()
+        cursor = conn.cursor()
         
         http_method = event.get('httpMethod', 'GET')
         path_parameters = event.get('pathParameters') or {}
         client_id = path_parameters.get('id')
         
         if http_method == 'GET':
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            
             if client_id:
-                # Get specific client
                 cursor.execute("""
                     SELECT client_id, first_name, middle_name, last_name, date_of_birth,
                            civil_status, phone_number, email, street, city, state, zip_code,
@@ -49,28 +44,26 @@ def lambda_handler(event, context):
                 
                 client = {
                     'clientId': str(row[0]),
-                    'firstName': row[1],
-                    'middleName': row[2],
-                    'lastName': row[3],
-                    'dateOfBirth': row[4].isoformat() if row[4] else None,
-                    'civilStatus': row[5],
-                    'phoneNumber': row[6],
-                    'email': row[7],
+                    'firstName': row[1] or '',
+                    'middleName': row[2] or '',
+                    'lastName': row[3] or '',
+                    'dateOfBirth': row[4].isoformat() if row[4] else '',
+                    'civilStatus': row[5] or '',
+                    'phoneNumber': row[6] or '',
+                    'email': row[7] or '',
                     'address': {
-                        'street': row[8],
-                        'city': row[9],
-                        'state': row[10],
-                        'zip': row[11]
+                        'street': row[8] or '',
+                        'city': row[9] or '',
+                        'state': row[10] or '',
+                        'zip': row[11] or ''
                     },
-                    'opposingParties': row[12],
-                    'notes': row[13],
-                    'dateAdded': row[14].isoformat() if row[14] else None,
-                    'updatedAt': row[15].isoformat() if row[15] else None
+                    'opposingParties': row[12] or '',
+                    'notes': row[13] or '',
+                    'dateAdded': row[14].isoformat() if row[14] else '',
+                    'updatedAt': row[15].isoformat() if row[15] else ''
                 }
-                
                 return create_cors_response(200, client)
             else:
-                # Get all clients with pagination
                 query_params = event.get('queryStringParameters') or {}
                 page = int(query_params.get('page', 1))
                 limit = int(query_params.get('limit', 100))
@@ -89,26 +82,25 @@ def lambda_handler(event, context):
                 for row in rows:
                     clients.append({
                         'clientId': str(row[0]),
-                        'firstName': row[1],
-                        'middleName': row[2],
-                        'lastName': row[3],
-                        'dateOfBirth': row[4].isoformat() if row[4] else None,
-                        'civilStatus': row[5],
-                        'phoneNumber': row[6],
-                        'email': row[7],
+                        'firstName': row[1] or '',
+                        'middleName': row[2] or '',
+                        'lastName': row[3] or '',
+                        'dateOfBirth': row[4].isoformat() if row[4] else '',
+                        'civilStatus': row[5] or '',
+                        'phoneNumber': row[6] or '',
+                        'email': row[7] or '',
                         'address': {
-                            'street': row[8],
-                            'city': row[9],
-                            'state': row[10],
-                            'zip': row[11]
+                            'street': row[8] or '',
+                            'city': row[9] or '',
+                            'state': row[10] or '',
+                            'zip': row[11] or ''
                         },
-                        'opposingParties': row[12],
-                        'notes': row[13],
-                        'dateAdded': row[14].isoformat() if row[14] else None,
-                        'updatedAt': row[15].isoformat() if row[15] else None
+                        'opposingParties': row[12] or '',
+                        'notes': row[13] or '',
+                        'dateAdded': row[14].isoformat() if row[14] else '',
+                        'updatedAt': row[15].isoformat() if row[15] else ''
                     })
                 
-                # Get total count
                 cursor.execute("SELECT COUNT(*) FROM clients")
                 total = cursor.fetchone()[0]
                 
@@ -122,18 +114,8 @@ def lambda_handler(event, context):
                 })
         
         elif http_method == 'POST':
-            # Handle client creation
-            body = {}
-            if event.get('body'):
-                try:
-                    body = json.loads(event['body'])
-                except:
-                    return create_cors_response(400, {'error': 'Invalid JSON body'})
+            body = json.loads(event.get('body', '{}'))
             
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            
-            # Insert new client
             cursor.execute("""
                 INSERT INTO clients (first_name, middle_name, last_name, date_of_birth,
                                    civil_status, phone_number, email, street, city, state, 
@@ -141,19 +123,19 @@ def lambda_handler(event, context):
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING client_id, created_at
             """, (
-                body.get('firstName'),
-                body.get('middleName'),
-                body.get('lastName'),
-                body.get('dateOfBirth'),
-                body.get('civilStatus'),
-                body.get('phoneNumber'),
-                body.get('email'),
-                body.get('address', {}).get('street'),
-                body.get('address', {}).get('city'),
-                body.get('address', {}).get('state'),
-                body.get('address', {}).get('zip'),
-                body.get('opposingParties'),
-                body.get('notes')
+                body.get('firstName', ''),
+                body.get('middleName', ''),
+                body.get('lastName', ''),
+                body.get('dateOfBirth') or None,
+                body.get('civilStatus', ''),
+                body.get('phoneNumber', ''),
+                body.get('email', ''),
+                body.get('address', {}).get('street', ''),
+                body.get('address', {}).get('city', ''),
+                body.get('address', {}).get('state', ''),
+                body.get('address', {}).get('zip', ''),
+                body.get('opposingParties', ''),
+                body.get('notes', '')
             ))
             
             result = cursor.fetchone()
@@ -162,16 +144,16 @@ def lambda_handler(event, context):
             
             new_client = {
                 'clientId': str(client_id),
-                'firstName': body.get('firstName'),
-                'middleName': body.get('middleName'),
-                'lastName': body.get('lastName'),
-                'dateOfBirth': body.get('dateOfBirth'),
-                'civilStatus': body.get('civilStatus'),
-                'phoneNumber': body.get('phoneNumber'),
-                'email': body.get('email'),
+                'firstName': body.get('firstName', ''),
+                'middleName': body.get('middleName', ''),
+                'lastName': body.get('lastName', ''),
+                'dateOfBirth': body.get('dateOfBirth', ''),
+                'civilStatus': body.get('civilStatus', ''),
+                'phoneNumber': body.get('phoneNumber', ''),
+                'email': body.get('email', ''),
                 'address': body.get('address', {}),
-                'opposingParties': body.get('opposingParties'),
-                'notes': body.get('notes'),
+                'opposingParties': body.get('opposingParties', ''),
+                'notes': body.get('notes', ''),
                 'dateAdded': created_at.isoformat(),
                 'updatedAt': created_at.isoformat()
             }
@@ -182,15 +164,7 @@ def lambda_handler(event, context):
             if not client_id:
                 return create_cors_response(400, {'error': 'Client ID required'})
             
-            body = {}
-            if event.get('body'):
-                try:
-                    body = json.loads(event['body'])
-                except:
-                    return create_cors_response(400, {'error': 'Invalid JSON body'})
-            
-            conn = db.get_connection()
-            cursor = conn.cursor()
+            body = json.loads(event.get('body', '{}'))
             
             cursor.execute("""
                 UPDATE clients SET 
@@ -200,19 +174,19 @@ def lambda_handler(event, context):
                 WHERE client_id = %s
                 RETURNING updated_at
             """, (
-                body.get('firstName'),
-                body.get('middleName'),
-                body.get('lastName'),
-                body.get('dateOfBirth'),
-                body.get('civilStatus'),
-                body.get('phoneNumber'),
-                body.get('email'),
-                body.get('address', {}).get('street'),
-                body.get('address', {}).get('city'),
-                body.get('address', {}).get('state'),
-                body.get('address', {}).get('zip'),
-                body.get('opposingParties'),
-                body.get('notes'),
+                body.get('firstName', ''),
+                body.get('middleName', ''),
+                body.get('lastName', ''),
+                body.get('dateOfBirth') or None,
+                body.get('civilStatus', ''),
+                body.get('phoneNumber', ''),
+                body.get('email', ''),
+                body.get('address', {}).get('street', ''),
+                body.get('address', {}).get('city', ''),
+                body.get('address', {}).get('state', ''),
+                body.get('address', {}).get('zip', ''),
+                body.get('opposingParties', ''),
+                body.get('notes', ''),
                 client_id
             ))
             
@@ -226,9 +200,6 @@ def lambda_handler(event, context):
         elif http_method == 'DELETE':
             if not client_id:
                 return create_cors_response(400, {'error': 'Client ID required'})
-            
-            conn = db.get_connection()
-            cursor = conn.cursor()
             
             cursor.execute("DELETE FROM clients WHERE client_id = %s", (client_id,))
             
