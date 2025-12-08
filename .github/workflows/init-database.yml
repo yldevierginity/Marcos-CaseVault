@@ -37,14 +37,12 @@ jobs:
           
           def lambda_handler(event, context):
               try:
-                  # Get database credentials
                   secrets_client = boto3.client('secretsmanager')
                   secret_response = secrets_client.get_secret_value(
                       SecretId=os.environ['DB_SECRET_ARN']
                   )
                   secret = json.loads(secret_response['SecretString'])
                   
-                  # Connect to database
                   conn = psycopg2.connect(
                       host=os.environ['CLUSTER_ENDPOINT'],
                       port=5432,
@@ -54,8 +52,6 @@ jobs:
                   )
                   
                   cursor = conn.cursor()
-                  
-                  # Execute schema SQL
                   schema_sql = event.get('schema_sql', '')
                   if schema_sql:
                       cursor.execute(schema_sql)
@@ -85,7 +81,6 @@ jobs:
       
       - name: Deploy and invoke database init Lambda
         run: |
-          # Create temporary Lambda function
           aws lambda create-function \
             --function-name temp-db-init \
             --runtime python3.11 \
@@ -96,23 +91,19 @@ jobs:
             --environment Variables="{DB_SECRET_ARN=$(aws secretsmanager list-secrets --query 'SecretList[?Name==`casevault-db-credentials`].ARN' --output text),CLUSTER_ENDPOINT=$(aws rds describe-db-clusters --query 'DBClusters[?DBClusterIdentifier==`casevault-cluster`].Endpoint' --output text)}" \
             --timeout 300 || true
           
-          # Wait for function to be active
           aws lambda wait function-active --function-name temp-db-init
           
-          # Read schema file and invoke Lambda
           SCHEMA_SQL=$(cat database/schema.sql | jq -Rs .)
           aws lambda invoke \
             --function-name temp-db-init \
             --payload "{\"schema_sql\": $SCHEMA_SQL}" \
             response.json
           
-          # Check response
           cat response.json
           if grep -q "Error" response.json; then
             echo "Database initialization failed"
             exit 1
           fi
           
-          # Clean up
           aws lambda delete-function --function-name temp-db-init
           echo "Database schema initialized successfully!"
