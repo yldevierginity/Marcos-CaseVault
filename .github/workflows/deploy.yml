@@ -80,22 +80,6 @@ jobs:
           cd infrastructure
           terraform apply tfplan
       
-      - name: Save database credentials for manual initialization
-        if: ${{ !inputs.destroy }}
-        run: |
-          cd infrastructure
-          DB_SECRET_ARN=$(terraform output -raw database_secret_arn)
-          DB_ENDPOINT=$(terraform output -raw database_endpoint)
-          
-          echo "Database initialization required:"
-          echo "DB_SECRET_ARN=$DB_SECRET_ARN"
-          echo "DB_ENDPOINT=$DB_ENDPOINT"
-          echo ""
-          echo "Run this command manually from a machine with database access:"
-          echo "psql -h $DB_ENDPOINT -U <username> -d lawfirmdb -f database/schema.sql"
-          echo ""
-          echo "Or use the init-database.sh script with these values."
-      
       - name: Terraform Destroy
         if: ${{ inputs.destroy }}
         run: |
@@ -132,3 +116,8 @@ jobs:
         with:
           name: frontend-build
           path: frontend/dist/
+
+  init-database:
+    needs: deploy
+    if: ${{ !inputs.destroy }}
+    uses: ./.github/workflows/init-database.yml
