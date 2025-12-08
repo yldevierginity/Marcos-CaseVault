@@ -22,8 +22,58 @@ def lambda_handler(event, context):
         if event.get('httpMethod') == 'OPTIONS':
             return create_cors_response(200, {'message': 'OK'})
         
-        # Return mock data
-        return create_cors_response(200, {'users': [], 'message': 'Users endpoint working'})
+        http_method = event.get('httpMethod', 'GET')
+        
+        if http_method == 'GET':
+            # Return mock user data
+            mock_users = [
+                {
+                    'user_id': '1',
+                    'first_name': 'Jane',
+                    'last_name': 'Smith',
+                    'email': 'jane@lawfirm.com',
+                    'role': 'lawyer',
+                    'is_active': True,
+                    'created_at': '2024-01-01T00:00:00Z'
+                },
+                {
+                    'user_id': '2',
+                    'first_name': 'Bob',
+                    'last_name': 'Wilson',
+                    'email': 'bob@lawfirm.com',
+                    'role': 'admin',
+                    'is_active': True,
+                    'created_at': '2024-01-02T00:00:00Z'
+                }
+            ]
+            
+            return create_cors_response(200, {
+                'users': mock_users,
+                'pagination': {
+                    'page': 1,
+                    'limit': 100,
+                    'total': 2
+                }
+            })
+        
+        elif http_method == 'POST':
+            return create_cors_response(201, {
+                'message': 'User created successfully',
+                'user_id': '123'
+            })
+        
+        elif http_method == 'PUT':
+            return create_cors_response(200, {
+                'message': 'User updated successfully'
+            })
+        
+        elif http_method == 'DELETE':
+            return create_cors_response(200, {
+                'message': 'User deleted successfully'
+            })
+        
+        else:
+            return create_cors_response(405, {'error': 'Method not allowed'})
     
     except Exception as e:
         return create_cors_response(500, {'error': str(e)})

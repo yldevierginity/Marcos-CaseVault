@@ -35,14 +35,28 @@ def lambda_handler(event, context):
                     'case_title': 'Test Case 1',
                     'case_type': 'Civil',
                     'status': 'active',
-                    'created_at': '2024-01-01T00:00:00Z'
+                    'created_at': '2024-01-01T00:00:00Z',
+                    'client': {
+                        'name': 'John Doe',
+                        'email': 'john@example.com'
+                    },
+                    'assigned_lawyer': {
+                        'name': 'Jane Smith'
+                    }
                 },
                 {
                     'case_id': '2', 
                     'case_title': 'Test Case 2',
                     'case_type': 'Criminal',
                     'status': 'pending',
-                    'created_at': '2024-01-02T00:00:00Z'
+                    'created_at': '2024-01-02T00:00:00Z',
+                    'client': {
+                        'name': 'Alice Johnson',
+                        'email': 'alice@example.com'
+                    },
+                    'assigned_lawyer': {
+                        'name': 'Bob Wilson'
+                    }
                 }
             ]
             
@@ -56,6 +70,25 @@ def lambda_handler(event, context):
             }
             
             return create_cors_response(200, response_data)
+        
+        elif http_method == 'POST':
+            # Handle case creation
+            return create_cors_response(201, {
+                'message': 'Case created successfully',
+                'case_id': '123'
+            })
+        
+        elif http_method == 'PUT':
+            # Handle case update
+            return create_cors_response(200, {
+                'message': 'Case updated successfully'
+            })
+        
+        elif http_method == 'DELETE':
+            # Handle case deletion
+            return create_cors_response(200, {
+                'message': 'Case deleted successfully'
+            })
         
         else:
             return create_cors_response(405, {'error': 'Method not allowed'})

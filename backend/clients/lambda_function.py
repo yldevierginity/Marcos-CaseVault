@@ -22,8 +22,64 @@ def lambda_handler(event, context):
         if event.get('httpMethod') == 'OPTIONS':
             return create_cors_response(200, {'message': 'OK'})
         
-        # Return mock data
-        return create_cors_response(200, {'clients': [], 'message': 'Clients endpoint working'})
+        http_method = event.get('httpMethod', 'GET')
+        
+        if http_method == 'GET':
+            # Return mock client data with proper structure
+            mock_clients = [
+                {
+                    'client_id': '1',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
+                    'email': 'john@example.com',
+                    'phone_number': '+1234567890',
+                    'address': '123 Main St',
+                    'city': 'New York',
+                    'state': 'NY',
+                    'zip_code': '10001',
+                    'created_at': '2024-01-01T00:00:00Z'
+                },
+                {
+                    'client_id': '2',
+                    'first_name': 'Alice',
+                    'last_name': 'Johnson',
+                    'email': 'alice@example.com',
+                    'phone_number': '+1234567891',
+                    'address': '456 Oak Ave',
+                    'city': 'Los Angeles',
+                    'state': 'CA',
+                    'zip_code': '90210',
+                    'created_at': '2024-01-02T00:00:00Z'
+                }
+            ]
+            
+            return create_cors_response(200, {
+                'clients': mock_clients,
+                'pagination': {
+                    'page': 1,
+                    'limit': 100,
+                    'total': 2
+                }
+            })
+        
+        elif http_method == 'POST':
+            return create_cors_response(201, {
+                'message': 'Client created successfully',
+                'client_id': '123'
+            })
+        
+        elif http_method == 'PUT':
+            return create_cors_response(200, {
+                'message': 'Client updated successfully'
+            })
+        
+        elif http_method == 'DELETE':
+            return create_cors_response(200, {
+                'message': 'Client deleted successfully'
+            })
+        
+        else:
+            return create_cors_response(405, {'error': 'Method not allowed'})
     
     except Exception as e:
         return create_cors_response(500, {'error': str(e)})
