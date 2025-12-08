@@ -63,10 +63,29 @@ def lambda_handler(event, context):
             })
         
         elif http_method == 'POST':
-            return create_cors_response(201, {
-                'message': 'Client created successfully',
-                'client_id': '123'
-            })
+            # Handle client creation - return complete object
+            body = {}
+            if event.get('body'):
+                try:
+                    body = json.loads(event['body'])
+                except:
+                    pass
+            
+            new_client = {
+                'client_id': '123',
+                'first_name': body.get('first_name', ''),
+                'last_name': body.get('last_name', ''),
+                'email': body.get('email', ''),
+                'phone_number': body.get('phone_number', ''),
+                'address': body.get('address', ''),
+                'city': body.get('city', ''),
+                'state': body.get('state', ''),
+                'zip_code': body.get('zip_code', ''),
+                'created_at': '2024-12-08T00:00:00Z',
+                'updated_at': '2024-12-08T00:00:00Z'
+            }
+            
+            return create_cors_response(201, new_client)
         
         elif http_method == 'PUT':
             return create_cors_response(200, {

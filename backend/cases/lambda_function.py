@@ -72,11 +72,36 @@ def lambda_handler(event, context):
             return create_cors_response(200, response_data)
         
         elif http_method == 'POST':
-            # Handle case creation
-            return create_cors_response(201, {
-                'message': 'Case created successfully',
-                'case_id': '123'
-            })
+            # Handle case creation - return complete object
+            body = {}
+            if event.get('body'):
+                try:
+                    body = json.loads(event['body'])
+                except:
+                    pass
+            
+            new_case = {
+                'case_id': '123',
+                'case_title': body.get('case_title', 'New Case'),
+                'case_type': body.get('case_type', 'Civil'),
+                'status': body.get('status', 'active'),
+                'description': body.get('description', ''),
+                'priority': body.get('priority', 'medium'),
+                'estimated_value': body.get('estimated_value'),
+                'start_date': body.get('start_date'),
+                'end_date': body.get('end_date'),
+                'created_at': '2024-12-08T00:00:00Z',
+                'updated_at': '2024-12-08T00:00:00Z',
+                'client': {
+                    'name': 'Client Name',
+                    'email': 'client@example.com'
+                },
+                'assigned_lawyer': {
+                    'name': 'Assigned Lawyer'
+                }
+            }
+            
+            return create_cors_response(201, new_case)
         
         elif http_method == 'PUT':
             # Handle case update

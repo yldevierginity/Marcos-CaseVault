@@ -57,10 +57,26 @@ def lambda_handler(event, context):
             })
         
         elif http_method == 'POST':
-            return create_cors_response(201, {
-                'message': 'User created successfully',
-                'user_id': '123'
-            })
+            # Handle user creation - return complete object
+            body = {}
+            if event.get('body'):
+                try:
+                    body = json.loads(event['body'])
+                except:
+                    pass
+            
+            new_user = {
+                'user_id': '123',
+                'first_name': body.get('first_name', ''),
+                'last_name': body.get('last_name', ''),
+                'email': body.get('email', ''),
+                'role': body.get('role', 'lawyer'),
+                'is_active': True,
+                'created_at': '2024-12-08T00:00:00Z',
+                'updated_at': '2024-12-08T00:00:00Z'
+            }
+            
+            return create_cors_response(201, new_user)
         
         elif http_method == 'PUT':
             return create_cors_response(200, {
