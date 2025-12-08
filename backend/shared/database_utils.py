@@ -3,15 +3,11 @@ import psycopg2
 import boto3
 import os
 from typing import Dict, Any, List, Optional
-from aws_lambda_powertools import Logger, Tracer
-
-logger = Logger()
-tracer = Tracer()
 
 class DatabaseConnection:
     def __init__(self):
-        self.secret_arn = os.environ['DB_SECRET_ARN']
-        self.cluster_endpoint = os.environ['CLUSTER_ENDPOINT']
+        self.secret_arn = os.environ.get('DB_SECRET_ARN')
+        self.cluster_endpoint = os.environ.get('CLUSTER_ENDPOINT')
         self.secrets_client = boto3.client('secretsmanager')
         self._connection = None
     
@@ -34,9 +30,9 @@ class DatabaseConnection:
                     password=secret['password'],
                     connect_timeout=10
                 )
-                logger.info("Database connection established")
+                print("Database connection established")
             except Exception as e:
-                logger.error(f"Database connection failed: {str(e)}")
+                print(f"Database connection failed: {str(e)}")
                 raise
         return self._connection
     
@@ -44,7 +40,7 @@ class DatabaseConnection:
         """Close database connection"""
         if self._connection and not self._connection.closed:
             self._connection.close()
-            logger.info("Database connection closed")
+            print("Database connection closed")
 
 class AdminLogger:
     def __init__(self, db_connection: DatabaseConnection):
@@ -70,9 +66,9 @@ class AdminLogger:
             
             conn.commit()
             cursor.close()
-            logger.info(f"Admin action logged: {action} on {table_name}")
+            print(f"Admin action logged: {action} on {table_name}")
         except Exception as e:
-            logger.error(f"Failed to log admin action: {str(e)}")
+            print(f"Failed to log admin action: {str(e)}")
 
 def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Extract user information from Cognito JWT token"""
@@ -92,57 +88,5 @@ def get_user_from_cognito(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             'last_name': claims.get('family_name')
         }
     except Exception as e:
-        logger.error(f"Failed to extract user from Cognito: {str(e)}")
+        print(f"Failed to extract user from Cognito: {str(e)}")
         return None
-
-def create_response(status_code: int, body: Dict[str, Any], 
-                   headers: Dict[str, str] = None) -> Dict[str, Any]:
-    """Create standardized API Gateway response"""
-    default_headers = {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-        'Access-Control-Allow-Credentials': 'true'
-    }
-    
-    if headers:
-        default_headers.update(headers)
-    
-    return {
-        'statusCode': status_code,
-        'headers': default_headers,
-        'body': json.dumps(body)
-    }
-
-def validate_email_domain(email: str) -> bool:
-    """Validate that email is from Gmail domain only"""
-    if not email or '@' not in email:
-        return False
-    
-    domain = email.split('@')[1].lower()
-    return domain == 'gmail.com'
-
-def paginate_results(cursor, page: int = 1, limit: int = 20) -> Dict[str, Any]:
-    """Paginate database results"""
-    offset = (page - 1) * limit
-    
-    # Get total count
-    cursor.execute("SELECT COUNT(*) FROM ({}) as count_query".format(
-        cursor.query.decode() if hasattr(cursor.query, 'decode') else str(cursor.query)
-    ))
-    total_count = cursor.fetchone()[0]
-    
-    # Get paginated results
-    cursor.execute(f"{cursor.query} LIMIT %s OFFSET %s", (limit, offset))
-    results = cursor.fetchall()
-    
-    return {
-        'data': results,
-        'pagination': {
-            'page': page,
-            'limit': limit,
-            'total': total_count,
-            'pages': (total_count + limit - 1) // limit
-        }
-    }
