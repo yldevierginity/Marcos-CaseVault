@@ -5,7 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - 'backend/**'
-      - '!backend/requirements.txt'
+      - 'database/**'
   workflow_dispatch:
 
 jobs:
@@ -28,6 +28,9 @@ jobs:
         with:
           python-version: '3.11'
       
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client jq
+      
       - name: Create Lambda packages
         run: |
           cd backend
@@ -35,7 +38,7 @@ jobs:
             if [ -d "$func" ]; then
               cd "$func"
               pip install -r requirements.txt -t . --quiet
-              cp ../shared/database_utils.py . 2>/dev/null || true
+              cp ../shared/database_utils.py .
               zip -r "../${func}.zip" . -x "*.pyc" "__pycache__/*" >/dev/null
               cd ..
             fi
@@ -46,14 +49,29 @@ jobs:
           cd backend
           for func in clients cases hearings users search notifications admin_logs; do
             if [ -f "${func}.zip" ]; then
-              FUNCTION_NAME="law-firm-${func}"
+              FUNCTION_NAME="casevault-${func}"
               if aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
                 echo "Updating Lambda function: $FUNCTION_NAME"
                 aws lambda update-function-code \
                   --function-name "$FUNCTION_NAME" \
                   --zip-file "fileb://${func}.zip"
-              else
-                echo "Function $FUNCTION_NAME not found, skipping..."
               fi
             fi
           done
+      
+      - name: Initialize database schema
+        run: |
+          DB_SECRET_ARN="${{ secrets.DB_SECRET_ARN }}"
+          DB_ENDPOINT="${{ secrets.DB_ENDPOINT }}"
+          
+          if [ -n "$DB_SECRET_ARN" ] && [ -n "$DB_ENDPOINT" ]; then
+            DB_CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_ARN" --query SecretString --output text)
+            DB_USERNAME=$(echo "$DB_CREDENTIALS" | jq -r '.username')
+            DB_PASSWORD=$(echo "$DB_CREDENTIALS" | jq -r '.password')
+            
+            export PGPASSWORD="$DB_PASSWORD"
+            if psql -h "$DB_ENDPOINT" -U "$DB_USERNAME" -d lawfirmdb -c "SELECT 1;" >/dev/null 2>&1; then
+              psql -h "$DB_ENDPOINT" -U "$DB_USERNAME" -d lawfirmdb -f database/schema.sql
+              echo "Database schema updated successfully!"
+            fi
+          fi

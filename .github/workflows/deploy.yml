@@ -43,7 +43,7 @@ jobs:
           node-version: '18'
       
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq zip
+        run: sudo apt-get update && sudo apt-get install -y jq zip postgresql-client
       
       - name: Bootstrap S3 backend (if needed)
         run: |
@@ -58,7 +58,7 @@ jobs:
             if [ -d "$func" ]; then
               cd "$func"
               pip install -r requirements.txt -t . --quiet
-              cp ../shared/database_utils.py . 2>/dev/null || true
+              cp ../shared/database_utils.py .
               zip -r "../${func}.zip" . -x "*.pyc" "__pycache__/*" >/dev/null
               cd ..
             fi
@@ -79,6 +79,22 @@ jobs:
         run: |
           cd infrastructure
           terraform apply tfplan
+      
+      - name: Initialize database schema
+        if: ${{ !inputs.destroy }}
+        run: |
+          cd infrastructure
+          DB_SECRET_ARN=$(terraform output -raw database_secret_arn)
+          DB_ENDPOINT=$(terraform output -raw database_endpoint)
+          
+          DB_CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_ARN" --query SecretString --output text)
+          DB_USERNAME=$(echo "$DB_CREDENTIALS" | jq -r '.username')
+          DB_PASSWORD=$(echo "$DB_CREDENTIALS" | jq -r '.password')
+          
+          export PGPASSWORD="$DB_PASSWORD"
+          cd ..
+          psql -h "$DB_ENDPOINT" -U "$DB_USERNAME" -d lawfirmdb -f database/schema.sql
+          echo "Database schema initialized successfully!"
       
       - name: Terraform Destroy
         if: ${{ inputs.destroy }}
