@@ -1,5 +1,6 @@
 import json
 import psycopg2
+import psycopg2.extras
 import boto3
 import os
 from typing import Dict, Any, List, Optional
@@ -28,8 +29,10 @@ class DatabaseConnection:
                     database='lawfirmdb',
                     user=secret['username'],
                     password=secret['password'],
-                    connect_timeout=10
+                    connect_timeout=10,
+                    cursor_factory=psycopg2.extras.RealDictCursor
                 )
+                self._connection.autocommit = False
                 print("Database connection established")
             except Exception as e:
                 print(f"Database connection failed: {str(e)}")
