@@ -1,16 +1,14 @@
 import { useState } from "react";
-import { Search, FileText } from "lucide-react";
+import { Search, FileText, Edit, Trash2, X } from "lucide-react";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Card, CardContent } from "./ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Button } from "./ui/button";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { apiService } from "../services/api-service";
+import { toast } from "sonner";
 
 interface Case {
   caseId: string;
@@ -46,11 +44,14 @@ interface Client {
 interface CasesPageProps {
   cases: Case[];
   clients: Client[];
+  onCaseUpdate?: () => void;
 }
 
-export function CasesPage({ cases, clients }: CasesPageProps) {
+export function CasesPage({ cases, clients, onCaseUpdate }: CasesPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [editingCase, setEditingCase] = useState<Case | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -73,6 +74,62 @@ export function CasesPage({ cases, clients }: CasesPageProps) {
     const client = getClient(clientId);
     if (!client) return "Unknown Client";
     return `${client.firstName}${client.middleName ? " " + client.middleName : ""} ${client.lastName}`;
+  };
+
+  const handleEditCase = (case_: Case) => {
+    setEditingCase(case_);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCase) return;
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    // Get status from select element directly
+    const statusSelect = form.querySelector('select[name="status"]') as HTMLSelectElement;
+    const status = statusSelect ? statusSelect.value : editingCase.status;
+
+    const updatedCase = {
+      clientId: editingCase.clientId,
+      caseTitle: formData.get('caseTitle') as string,
+      caseType: formData.get('caseType') as string,
+      status: status,
+      description: formData.get('description') as string,
+      lawyerAssigned: formData.get('lawyerAssigned') as string,
+    };
+
+    try {
+      const result = await apiService.updateCase(editingCase.caseId, updatedCase);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Case updated successfully');
+        setIsEditDialogOpen(false);
+        setEditingCase(null);
+        onCaseUpdate?.();
+      }
+    } catch (error) {
+      toast.error('Failed to update case');
+    }
+  };
+
+  const handleDeleteCase = async (caseId: string) => {
+    if (!window.confirm('Are you sure you want to delete this case?')) return;
+    
+    try {
+      const result = await apiService.deleteCase(caseId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Case deleted successfully');
+        onCaseUpdate?.();
+      }
+    } catch (error) {
+      toast.error('Failed to delete case');
+    }
   };
 
   const filteredCases = cases.filter((case_) => {
@@ -99,19 +156,18 @@ export function CasesPage({ cases, clients }: CasesPageProps) {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <FileText className="w-8 h-8 text-primary" />
-          <h1>Cases</h1>
+          <h1 className="text-3xl font-bold">Cases</h1>
         </div>
         <p className="text-muted-foreground">
-          Browse and filter all cases by status
+          Manage and track all legal cases
         </p>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder="Search by client name, case ID, title, type, or lawyer..."
+            placeholder="Search cases by client, case ID, title, type, or lawyer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -119,114 +175,172 @@ export function CasesPage({ cases, clients }: CasesPageProps) {
         </div>
       </div>
 
-      {/* Tabs for filtering */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all">All Cases ({cases.length})</TabsTrigger>
           <TabsTrigger value="active">Active ({activeCases.length})</TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending ({pendingCases.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingCases.length})</TabsTrigger>
           <TabsTrigger value="closed">Closed ({closedCases.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab}>
-          <div className="grid grid-cols-1 gap-4">
-            {filteredCases.map((case_) => {
-              const client = getClient(case_.clientId);
-              return (
-                <Card
-                  key={case_.caseId}
-                  className="hover:shadow-lg transition-shadow"
-                >
+        <TabsContent value={activeTab} className="mt-6">
+          {filteredCases.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No cases found</h3>
+                <p className="text-muted-foreground text-center">
+                  {searchTerm
+                    ? "Try adjusting your search criteria"
+                    : "No cases match the selected filter"}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {filteredCases.map((case_) => (
+                <Card key={case_.caseId} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {/* Case Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3>{case_.caseTitle}</h3>
-                            <Badge className={getStatusColor(case_.status)}>
-                              {case_.status.charAt(0).toUpperCase() +
-                                case_.status.slice(1)}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Case ID: {case_.caseId} | {case_.caseType}
-                          </p>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{case_.caseTitle}</h3>
+                          <Badge className={getStatusColor(case_.status)}>
+                            {case_.status}
+                          </Badge>
                         </div>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Case ID: {case_.caseId}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Client: {getClientFullName(case_.clientId)}
+                        </p>
                       </div>
-
-                      {/* Case Details Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground mb-1">Client Name</p>
-                          <p className="font-medium">{getClientFullName(case_.clientId)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground mb-1">Client ID</p>
-                          <p className="font-medium">{case_.clientId}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground mb-1">Lawyer Assigned</p>
-                          <p className="font-medium">{case_.lawyerAssigned}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground mb-1">Creation Date</p>
-                          <p className="font-medium">
-                            {new Date(case_.creationDate).toLocaleDateString()}
-                          </p>
-                        </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditCase(case_)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteCase(case_.caseId)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-
-                      {/* Client Contact Info */}
-                      {client && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm pt-4 border-t border-border">
-                          <div>
-                            <p className="text-muted-foreground mb-1">Client Email</p>
-                            <p className="font-medium">{client.email}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground mb-1">Client Phone</p>
-                            <p className="font-medium">{client.phoneNumber}</p>
-                          </div>
-                          {client.opposingParties && (
-                            <div>
-                              <p className="text-muted-foreground mb-1">
-                                Opposing Party
-                              </p>
-                              <p className="font-medium">{client.opposingParties}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Description */}
-                      {case_.description && (
-                        <div className="pt-4 border-t border-border">
-                          <p className="text-sm text-muted-foreground mb-1">
-                            Description
-                          </p>
-                          <p className="text-sm">{case_.description}</p>
-                        </div>
-                      )}
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Type:</span>
+                        <p className="text-muted-foreground">{case_.caseType}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">Lawyer:</span>
+                        <p className="text-muted-foreground">{case_.lawyerAssigned}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">Created:</span>
+                        <p className="text-muted-foreground">
+                          {new Date(case_.creationDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {case_.description && (
+                      <div className="mt-4">
+                        <span className="font-medium text-sm">Description:</span>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {case_.description}
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
-
-          {filteredCases.length === 0 && (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                No cases found matching your criteria.
-              </p>
+              ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
+
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Edit Case</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {editingCase && (
+                <form onSubmit={handleUpdateCase} className="space-y-4">
+                  <div>
+                    <Label htmlFor="caseTitle">Case Title</Label>
+                    <Input
+                      id="caseTitle"
+                      name="caseTitle"
+                      defaultValue={editingCase.caseTitle}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="caseType">Case Type</Label>
+                    <Input
+                      id="caseType"
+                      name="caseType"
+                      defaultValue={editingCase.caseType}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <select 
+                      name="status" 
+                      defaultValue={editingCase.status}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="active">Active</option>
+                      <option value="pending">Pending</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="lawyerAssigned">Lawyer Assigned</Label>
+                    <Input
+                      id="lawyerAssigned"
+                      name="lawyerAssigned"
+                      defaultValue={editingCase.lawyerAssigned}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      defaultValue={editingCase.description}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" className="flex-1">Update Case</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
