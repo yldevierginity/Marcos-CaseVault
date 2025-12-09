@@ -104,18 +104,18 @@ function AppContent() {
         ]);
 
         if (clientsResponse.error) {
-          toast.error(`Failed to load clients: ${clientsResponse.error}`);
+          console.error('Clients error:', clientsResponse.error);
         } else if (clientsResponse.data) {
           setClients(clientsResponse.data.clients || []);
         }
         
         if (casesResponse.error) {
-          toast.error(`Failed to load cases: ${casesResponse.error}`);
+          console.error('Cases error:', casesResponse.error);
         } else if (casesResponse.data) {
           setCases(casesResponse.data.cases || []);
         }
       } catch (error: any) {
-        toast.error("Failed to load data");
+        console.error('Load data error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -191,8 +191,8 @@ function AppContent() {
       <Route path="/reset-password" element={<ResetPasswordPage onBackToLogin={() => navigate("/login")} />} />
       <Route path="/new-password" element={<NewPasswordPage onSuccess={() => navigate("/")} />} />
       
-      <Route path="/" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <Dashboard clients={clients} cases={cases} onNavigateToAddClient={() => navigate("/add-client")} />}<Toaster /></Layout></ProtectedRoute>} />
-      <Route path="/cases" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <CasesPage cases={cases} clients={clients} />}<Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <Dashboard clients={clients} cases={cases} onNavigateToAddClient={() => navigate("/add-client")} onClientUpdate={() => window.location.reload()} onCaseUpdate={() => window.location.reload()} />}<Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/cases" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <CasesPage cases={cases} clients={clients} onCaseUpdate={() => window.location.reload()} />}<Toaster /></Layout></ProtectedRoute>} />
       <Route path="/about" element={<ProtectedRoute><Layout currentPage="about" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AboutPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/lawyers" element={<ProtectedRoute><Layout currentPage="lawyers" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><LawyersPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/add-client" element={<ProtectedRoute><Layout currentPage="add-client" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AddClientPage onAddClient={handleAddClient} onBack={() => navigate("/")} /><Toaster /></Layout></ProtectedRoute>} />

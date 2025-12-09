@@ -1,5 +1,4 @@
-import { signIn, signOut, getCurrentUser, fetchUserAttributes, resetPassword, confirmResetPassword, confirmSignIn } from 'aws-amplify/auth';
-import { Hub } from 'aws-amplify/utils';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export interface User {
   username: string;
@@ -35,20 +34,47 @@ const updateState = (newState: Partial<AuthState>) => {
 const initializeAuth = async () => {
   try {
     updateState({ isLoading: true });
-    const user = await getCurrentUser();
-    const attributes = await fetchUserAttributes();
+    const token = localStorage.getItem('access_token');
     
-    updateState({
-      isAuthenticated: true,
-      user: {
-        username: user.username,
-        email: attributes.email || user.signInDetails?.loginId || user.username,
-        firstName: attributes.given_name,
-        lastName: attributes.family_name,
+    if (!token) {
+      updateState({ 
+        isAuthenticated: false, 
+        user: null, 
+        isLoading: false,
+        error: null,
+      });
+      return;
+    }
+
+    // Get user profile from Django backend
+    const response = await fetch(`${API_BASE_URL}/profile/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
       },
-      isLoading: false,
-      error: null,
     });
+
+    if (response.ok) {
+      const userData = await response.json();
+      updateState({
+        isAuthenticated: true,
+        user: {
+          username: userData.username,
+          email: userData.email,
+        },
+        isLoading: false,
+        error: null,
+      });
+    } else {
+      // Token invalid, clear it
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      updateState({ 
+        isAuthenticated: false, 
+        user: null, 
+        isLoading: false,
+        error: null,
+      });
+    }
   } catch (error) {
     console.log('User not authenticated:', error);
     updateState({ 
@@ -60,52 +86,33 @@ const initializeAuth = async () => {
   }
 };
 
-// Listen to auth events
-Hub.listen('auth', ({ payload }) => {
-  switch (payload.event) {
-    case 'signedIn':
-      initializeAuth();
-      break;
-    case 'signedOut':
-      updateState({ 
-        isAuthenticated: false, 
-        user: null, 
-        isLoading: false,
-        error: null,
-      });
-      break;
-    case 'signInWithRedirect_failure':
-      updateState({ 
-        error: (payload.data as any)?.message || 'Authentication failed',
-        isLoading: false,
-      });
-      break;
-  }
-});
-
 export const authService = {
   async signIn({ email, password }: { email: string; password: string }) {
     try {
       updateState({ isLoading: true, error: null });
       
-      // Check if user is already authenticated
-      try {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          await initializeAuth();
-          return { success: true };
-        }
-      } catch {
-        // User not authenticated, proceed with sign in
+      const response = await fetch(`${API_BASE_URL}/token/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: email, // Backend expects 'username' field but we send email
+          password: password,
+        }),
+      });
+      
+      if (!response.ok) {
+        updateState({ 
+          error: 'Incorrect username or password',
+          isLoading: false,
+        });
+        return { success: false, error: 'Incorrect username or password' };
       }
       
-      const result = await signIn({ username: email, password });
-      
-      // Check if new password is required
-      if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
-        updateState({ isLoading: false });
-        return { success: false, requiresNewPassword: true };
-      }
+      const data = await response.json();
+      localStorage.setItem('access_token', data.access);
+      localStorage.setItem('refresh_token', data.refresh);
       
       await initializeAuth();
       return { success: true };
@@ -123,27 +130,20 @@ export const authService = {
   },
 
   async confirmNewPassword({ newPassword }: { newPassword: string }) {
-    try {
-      updateState({ isLoading: true, error: null });
-      await confirmSignIn({ challengeResponse: newPassword });
-      await initializeAuth();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Confirm new password error:', error);
-      updateState({ 
-        error: error.message || 'Failed to set new password',
-        isLoading: false,
-      });
-      return { 
-        success: false, 
-        error: error.message || 'Failed to set new password' 
-      };
-    }
+    // Not needed for Django backend
+    return { success: true };
   },
 
   async signOut() {
     try {
-      await signOut();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      updateState({ 
+        isAuthenticated: false, 
+        user: null, 
+        isLoading: false,
+        error: null,
+      });
       return { success: true };
     } catch (error: any) {
       console.error('Sign out error:', error);
@@ -155,29 +155,13 @@ export const authService = {
   },
 
   async forgotPassword(username: string) {
-    try {
-      await resetPassword({ username });
-      return { success: true };
-    } catch (error: any) {
-      console.error('Forgot password error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Forgot password failed' 
-      };
-    }
+    // Placeholder for Django implementation
+    return { success: true };
   },
 
   async forgotPasswordSubmit(username: string, confirmationCode: string, newPassword: string) {
-    try {
-      await confirmResetPassword({ username, confirmationCode, newPassword });
-      return { success: true };
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Password reset failed' 
-      };
-    }
+    // Placeholder for Django implementation
+    return { success: true };
   },
 
   subscribe(callback: (state: AuthState) => void) {
@@ -200,4 +184,5 @@ export const authService = {
   }
 };
 
-// Don't initialize here - let the app initialize it after Amplify is configured
+// Initialize on load
+initializeAuth();

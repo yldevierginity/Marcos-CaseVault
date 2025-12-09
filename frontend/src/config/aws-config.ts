@@ -20,11 +20,10 @@ export const awsConfig = {
   },
 };
 
-// Validate Gmail domain for user registration
+// Validate email format (accepts any valid email)
 export const validateGmailDomain = (email: string): boolean => {
   if (!email || !email.includes('@')) return false;
-  const domain = email.split('@')[1].toLowerCase();
-  return domain === 'gmail.com';
+  return true; // Accept any valid email format
 };
 
 // API Configuration
