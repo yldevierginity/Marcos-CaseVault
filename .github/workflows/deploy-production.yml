@@ -15,11 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: ${{ steps.deploy.outputs.url }}
     
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout code
@@ -28,13 +27,14 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PRODUCTION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
+          terraform_wrapper: false
 
       - name: Terraform Init
         run: |
@@ -55,32 +55,38 @@ jobs:
         id: tf-outputs
         run: |
           cd Infrastructure
-          echo "asg_name=$(terraform output -raw asg_name 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
-          echo "api_url=$(terraform output -raw api_gateway_url 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+          ASG_NAME=$(terraform output -raw asg_name 2>/dev/null || echo '')
+          API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo '')
+          echo "asg_name=$ASG_NAME" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "ASG Name: $ASG_NAME"
+          echo "API URL: $API_URL"
 
       - name: Create deployment package
         run: |
           cd backend
-          zip -r ../deployment.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*"
+          zip -r deployment.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*" -x "*.sqlite3"
+          mv deployment.zip ../
 
       - name: Upload to S3
         run: |
           aws s3 cp deployment.zip s3://${{ secrets.DEPLOYMENT_BUCKET }}/production/deployment-${{ github.sha }}.zip
+          echo "Uploaded to s3://${{ secrets.DEPLOYMENT_BUCKET }}/production/deployment-${{ github.sha }}.zip"
 
       - name: Trigger instance refresh
         if: steps.tf-outputs.outputs.asg_name != ''
         run: |
           chmod +x scripts/trigger-deployment.sh
           ./scripts/trigger-deployment.sh \
-            ${{ steps.tf-outputs.outputs.asg_name }} \
-            ${{ github.sha }} \
-            production
+            "${{ steps.tf-outputs.outputs.asg_name }}" \
+            "${{ github.sha }}" \
+            "production"
 
       - name: Wait for deployment
         if: steps.tf-outputs.outputs.asg_name != ''
         run: |
           chmod +x scripts/wait-for-deployment.sh
-          ./scripts/wait-for-deployment.sh ${{ steps.tf-outputs.outputs.asg_name }}
+          ./scripts/wait-for-deployment.sh "${{ steps.tf-outputs.outputs.asg_name }}"
 
       - name: Health check
         id: health
@@ -89,26 +95,33 @@ jobs:
           ./scripts/health-check.sh production
 
       - name: Rollback on failure
-        if: failure()
+        if: failure() && steps.tf-outputs.outputs.asg_name != ''
         run: |
           echo "Deployment failed, initiating rollback..."
           chmod +x scripts/rollback.sh
-          ./scripts/rollback.sh ${{ steps.tf-outputs.outputs.asg_name }}
-
-      - name: Set deployment URL
-        id: deploy
-        run: |
-          echo "url=${{ steps.tf-outputs.outputs.api_url }}" >> $GITHUB_OUTPUT
+          ./scripts/rollback.sh "${{ steps.tf-outputs.outputs.asg_name }}"
 
       - name: Create GitHub Release
         if: success()
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
-          release_name: Production Release ${{ github.run_number }}
+          name: Production Release ${{ github.run_number }}
           body: |
-            Deployed commit: ${{ github.sha }}
-            Environment: Production
-            API URL: ${{ steps.tf-outputs.outputs.api_url }}
+            ## Deployment Details
+            - **Commit**: ${{ github.sha }}
+            - **Environment**: Production
+            - **API URL**: ${{ steps.tf-outputs.outputs.api_url }}
+            - **Deployed**: ${{ github.event.head_commit.timestamp }}
+            - **Author**: ${{ github.event.head_commit.author.name }}
+          generate_release_notes: true
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ASG: ${{ steps.tf-outputs.outputs.asg_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- API URL: ${{ steps.tf-outputs.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY

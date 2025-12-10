@@ -18,12 +18,17 @@ output "static_bucket" {
   description = "S3 bucket for static files"
 }
 
-output "alb_endpoint" {
-  value       = "http://${aws_lb.web.dns_name}"
-  description = "Application Load Balancer endpoint"
+output "alb_dns_name" {
+  value       = aws_lb.web.dns_name
+  description = "Application Load Balancer DNS name"
 }
 
 output "api_gateway_url" {
-  value       = "${aws_apigatewayv2_stage.prod.invoke_url}/api"
-  description = "API Gateway endpoint for backend"
+  value       = aws_apigatewayv2_stage.prod.invoke_url
+  description = "API Gateway base URL"
+}
+
+output "asg_name" {
+  value       = aws_autoscaling_group.web.name
+  description = "Auto Scaling Group name"
 }
