@@ -1,0 +1,94 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-1
+  ENVIRONMENT: staging
+
+jobs:
+  deploy:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        run: |
+          cd Infrastructure
+          terraform init
+
+      - name: Terraform Plan
+        run: |
+          cd Infrastructure
+          terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd Infrastructure
+          terraform apply -auto-approve tfplan
+
+      - name: Get Terraform Outputs
+        id: tf-outputs
+        run: |
+          cd Infrastructure
+          echo "asg_name=$(terraform output -raw asg_name 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(terraform output -raw static_bucket 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+
+      - name: Create deployment package
+        run: |
+          cd backend
+          zip -r ../deployment.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*"
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp deployment.zip s3://${{ secrets.DEPLOYMENT_BUCKET }}/staging/deployment-${{ github.sha }}.zip
+
+      - name: Trigger instance refresh
+        if: steps.tf-outputs.outputs.asg_name != ''
+        run: |
+          chmod +x scripts/trigger-deployment.sh
+          ./scripts/trigger-deployment.sh \
+            ${{ steps.tf-outputs.outputs.asg_name }} \
+            ${{ github.sha }} \
+            staging
+
+      - name: Wait for deployment
+        if: steps.tf-outputs.outputs.asg_name != ''
+        run: |
+          chmod +x scripts/wait-for-deployment.sh
+          ./scripts/wait-for-deployment.sh ${{ steps.tf-outputs.outputs.asg_name }}
+
+      - name: Health check
+        run: |
+          chmod +x scripts/health-check.sh
+          ./scripts/health-check.sh staging
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Staging deployment successful"
+          else
+            echo "❌ Staging deployment failed"
+          fi
