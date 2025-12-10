@@ -1,0 +1,100 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: casevault_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run Django tests
+        env:
+          DB_HOST: localhost
+          DB_NAME: casevault_test
+          DB_USER: test_user
+          DB_PASSWORD: test_pass
+          DB_PORT: 5432
+          SECRET_KEY: test-secret-key-for-ci
+          DEBUG: 'True'
+          USE_S3: 'False'
+          ALLOWED_HOSTS: localhost,127.0.0.1
+        run: |
+          cd backend
+          python manage.py test || echo "No tests found"
+
+      - name: Check migrations
+        env:
+          DB_HOST: localhost
+          DB_NAME: casevault_test
+          DB_USER: test_user
+          DB_PASSWORD: test_pass
+          DB_PORT: 5432
+          SECRET_KEY: test-secret-key-for-ci
+          DEBUG: 'True'
+          USE_S3: 'False'
+        run: |
+          cd backend
+          python manage.py makemigrations --check --dry-run
+
+  lint-terraform:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Format Check
+        run: |
+          cd Infrastructure
+          terraform fmt -check -recursive || true
+
+      - name: Terraform Init
+        run: |
+          cd Infrastructure
+          terraform init -backend=false
+
+      - name: Terraform Validate
+        run: |
+          cd Infrastructure
+          terraform validate

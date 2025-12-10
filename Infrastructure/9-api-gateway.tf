@@ -62,6 +62,7 @@ resource "aws_cloudwatch_log_group" "api_gateway" {
   retention_in_days = 7
 }
 
-output "api_gateway_endpoint" {
-  value = aws_apigatewayv2_stage.prod.invoke_url
+output "api_gateway_url" {
+  value       = aws_apigatewayv2_stage.prod.invoke_url
+  description = "API Gateway base URL"
 }

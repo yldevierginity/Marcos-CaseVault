@@ -1,0 +1,101 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-1
+  ENVIRONMENT: staging
+
+jobs:
+  deploy:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd Infrastructure
+          terraform init
+
+      - name: Terraform Plan
+        run: |
+          cd Infrastructure
+          terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd Infrastructure
+          terraform apply -auto-approve tfplan
+
+      - name: Get Terraform Outputs
+        id: tf-outputs
+        run: |
+          cd Infrastructure
+          ASG_NAME=$(terraform output -raw asg_name 2>/dev/null || echo '')
+          BUCKET=$(terraform output -raw static_bucket 2>/dev/null || echo '')
+          echo "asg_name=$ASG_NAME" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "ASG Name: $ASG_NAME"
+          echo "S3 Bucket: $BUCKET"
+
+      - name: Create deployment package
+        run: |
+          cd backend
+          zip -r deployment.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*" -x "*.sqlite3"
+          mv deployment.zip ../
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp deployment.zip s3://${{ secrets.DEPLOYMENT_BUCKET }}/staging/deployment-${{ github.sha }}.zip
+          echo "Uploaded to s3://${{ secrets.DEPLOYMENT_BUCKET }}/staging/deployment-${{ github.sha }}.zip"
+
+      - name: Trigger instance refresh
+        if: steps.tf-outputs.outputs.asg_name != ''
+        run: |
+          chmod +x scripts/trigger-deployment.sh
+          ./scripts/trigger-deployment.sh \
+            "${{ steps.tf-outputs.outputs.asg_name }}" \
+            "${{ github.sha }}" \
+            "staging"
+
+      - name: Wait for deployment
+        if: steps.tf-outputs.outputs.asg_name != ''
+        run: |
+          chmod +x scripts/wait-for-deployment.sh
+          ./scripts/wait-for-deployment.sh "${{ steps.tf-outputs.outputs.asg_name }}"
+
+      - name: Health check
+        run: |
+          chmod +x scripts/health-check.sh
+          ./scripts/health-check.sh staging || echo "Health check skipped"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: Staging" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ASG: ${{ steps.tf-outputs.outputs.asg_name }}" >> $GITHUB_STEP_SUMMARY

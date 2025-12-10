@@ -127,7 +127,7 @@ echo "Starting Django setup..."
 
 # Install dependencies
 yum update -y
-yum install -y python3.11 python3.11-pip git postgresql15
+yum install -y python3.11 python3.11-pip git postgresql15 unzip
 
 # Get secrets from Secrets Manager
 DB_SECRET=$(aws secretsmanager get-secret-value --secret-id ${aws_secretsmanager_secret.db_credentials.name} --region ${var.region} --query SecretString --output text)
@@ -144,9 +144,20 @@ SECRET_KEY=$(echo $DJANGO_SECRET | python3 -c "import sys, json; print(json.load
 mkdir -p /opt/casevault
 cd /opt/casevault
 
-# Clone your repository (UPDATE THIS WITH YOUR REPO URL)
-git clone https://github.com/yldevierginity/Marcos-CaseVault.git .
-cd backend
+# Check for deployment package from CI/CD
+DEPLOYMENT_BUCKET="${var.project_name}-deployment-artifacts"
+LATEST_DEPLOYMENT=$(aws s3 ls s3://$DEPLOYMENT_BUCKET/production/ --recursive | sort | tail -n 1 | awk '{print $4}')
+
+if [ -n "$LATEST_DEPLOYMENT" ]; then
+  echo "📦 Downloading deployment from S3: $LATEST_DEPLOYMENT"
+  aws s3 cp s3://$DEPLOYMENT_BUCKET/$LATEST_DEPLOYMENT deployment.zip
+  unzip -q deployment.zip -d backend
+  cd backend
+else
+  echo "📦 Cloning from Git repository"
+  git clone https://github.com/YOUR-GITHUB-USERNAME/Marcos-CaseVault.git .
+  cd backend
+fi
 
 # Install Python dependencies
 pip3.11 install --upgrade pip
@@ -186,6 +197,7 @@ WorkingDirectory=/opt/casevault/backend
 EnvironmentFile=/opt/casevault/backend/.env
 ExecStart=/usr/local/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 casevault.wsgi:application
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
@@ -196,7 +208,7 @@ systemctl daemon-reload
 systemctl enable gunicorn
 systemctl start gunicorn
 
-echo "Django setup completed successfully!"
+echo "✅ Django setup completed successfully!"
 EOF
   )
 

@@ -9,13 +9,28 @@ resource "aws_autoscaling_group" "web" {
     version = "$Latest"
   }
   target_group_arns         = [aws_lb_target_group.web.arn]
-  health_check_type         = "EC2"
-  health_check_grace_period = 60
-  protect_from_scale_in     = true
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+  
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 90
+      instance_warmup        = 300
+      checkpoint_percentages = [50, 100]
+      checkpoint_delay       = 300
+    }
+  }
 
   tag {
     key                 = "Name"
     value               = "${var.project_name}-web"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Environment"
+    value               = "production"
     propagate_at_launch = true
   }
 }
@@ -43,4 +58,9 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
     AutoScalingGroupName = aws_autoscaling_group.web.name
   }
   alarm_actions       = [aws_autoscaling_policy.scale_out.arn]
+}
+
+output "asg_name" {
+  value       = aws_autoscaling_group.web.name
+  description = "Auto Scaling Group name for deployments"
 }

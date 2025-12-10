@@ -74,3 +74,4 @@ test_api.py
 coverage/
 .tmp/
 *.tsbuildinfo
+INFRASTRUCTURE_CHANGES.md
