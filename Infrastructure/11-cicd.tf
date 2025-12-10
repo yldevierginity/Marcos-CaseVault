@@ -82,13 +82,38 @@ resource "aws_iam_role_policy" "github_actions" {
           "autoscaling:*",
           "ec2:*",
           "elasticloadbalancing:*",
-          "s3:*",
           "rds:Describe*",
           "secretsmanager:GetSecretValue",
           "logs:*",
-          "cloudwatch:*"
+          "cloudwatch:*",
+          "apigateway:*",
+          "apigatewayv2:*"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.project_name}-terraform-state",
+          "arn:aws:s3:::${var.project_name}-terraform-state/*",
+          aws_s3_bucket.deployment.arn,
+          "${aws_s3_bucket.deployment.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = "arn:aws:dynamodb:${var.region}:*:table/${var.project_name}-terraform-locks"
       },
       {
         Effect = "Allow"
