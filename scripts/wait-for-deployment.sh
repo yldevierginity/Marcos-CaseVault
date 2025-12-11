@@ -19,20 +19,21 @@ while true; do
     exit 1
   fi
 
-  # Get instance refresh status
-  STATUS=$(aws autoscaling describe-instance-refreshes \
+  # Get instance refresh details
+  REFRESH_INFO=$(aws autoscaling describe-instance-refreshes \
     --auto-scaling-group-name "$ASG_NAME" \
     --max-records 1 \
-    --query 'InstanceRefreshes[0].Status' \
-    --output text)
+    --output json)
 
-  PERCENTAGE=$(aws autoscaling describe-instance-refreshes \
-    --auto-scaling-group-name "$ASG_NAME" \
-    --max-records 1 \
-    --query 'InstanceRefreshes[0].PercentageComplete' \
-    --output text)
+  STATUS=$(echo "$REFRESH_INFO" | jq -r '.InstanceRefreshes[0].Status')
+  PERCENTAGE=$(echo "$REFRESH_INFO" | jq -r '.InstanceRefreshes[0].PercentageComplete')
+  STATUS_REASON=$(echo "$REFRESH_INFO" | jq -r '.InstanceRefreshes[0].StatusReason // "N/A"')
 
   echo "📊 Status: $STATUS | Progress: ${PERCENTAGE}%"
+  
+  if [ "$STATUS_REASON" != "N/A" ]; then
+    echo "ℹ️  Reason: $STATUS_REASON"
+  fi
 
   case $STATUS in
     "Successful")
