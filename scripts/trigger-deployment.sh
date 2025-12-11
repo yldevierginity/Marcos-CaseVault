@@ -9,6 +9,14 @@ echo "🚀 Triggering deployment for ASG: $ASG_NAME"
 echo "📦 Commit: $COMMIT_SHA"
 echo "🌍 Environment: $ENVIRONMENT"
 
+# Get the launch template name from the ASG
+LT_NAME=$(aws autoscaling describe-auto-scaling-groups \
+  --auto-scaling-group-names "$ASG_NAME" \
+  --query 'AutoScalingGroups[0].LaunchTemplate.LaunchTemplateName' \
+  --output text)
+
+echo "🔧 Using launch template: $LT_NAME"
+
 # Start instance refresh for rolling deployment
 REFRESH_ID=$(aws autoscaling start-instance-refresh \
   --auto-scaling-group-name "$ASG_NAME" \
@@ -20,7 +28,7 @@ REFRESH_ID=$(aws autoscaling start-instance-refresh \
   }' \
   --desired-configuration '{
     "LaunchTemplate": {
-      "LaunchTemplateName": "'"$ASG_NAME"'-lt",
+      "LaunchTemplateName": "'"$LT_NAME"'",
       "Version": "$Latest"
     }
   }' \
