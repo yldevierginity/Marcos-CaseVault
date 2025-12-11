@@ -20,7 +20,7 @@ resource "aws_apigatewayv2_integration" "alb" {
   api_id             = aws_apigatewayv2_api.main.id
   integration_type   = "HTTP_PROXY"
   integration_method = "ANY"
-  integration_uri    = aws_lb_target_group.web.arn
+  integration_uri    = aws_lb_listener.web.arn
   connection_type    = "VPC_LINK"
   connection_id      = aws_apigatewayv2_vpc_link.main.id
 }
@@ -60,9 +60,4 @@ resource "aws_apigatewayv2_stage" "prod" {
 resource "aws_cloudwatch_log_group" "api_gateway" {
   name              = "/aws/apigateway/${var.project_name}"
   retention_in_days = 7
-}
-
-output "api_gateway_url" {
-  value       = aws_apigatewayv2_stage.prod.invoke_url
-  description = "API Gateway base URL"
 }
