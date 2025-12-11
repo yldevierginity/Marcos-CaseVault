@@ -23,19 +23,21 @@ resource "aws_security_group" "bastion" {
     to_port     = "443"
   }
 
-  egress {
-    protocol        = "tcp"
-    security_groups = [aws_security_group.rds.id]
-    from_port       = "5432"
-    to_port         = "5432"
-  }
-
   lifecycle {
     ignore_changes = [
       ingress,
       egress
     ]
   }
+}
+
+resource "aws_security_group_rule" "bastion_to_rds" {
+  type                     = "egress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.bastion.id
+  source_security_group_id = aws_security_group.rds.id
 }
 
 data "aws_ami" "al2023" {
