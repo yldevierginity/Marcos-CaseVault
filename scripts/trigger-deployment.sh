@@ -23,7 +23,7 @@ REFRESH_ID=$(aws autoscaling start-instance-refresh \
   --preferences '{
     "MinHealthyPercentage": 90,
     "InstanceWarmup": 300,
-    "CheckpointPercentages": [50, 100],
+    "CheckpointPercentages": [50],
     "CheckpointDelay": 300
   }' \
   --desired-configuration '{
