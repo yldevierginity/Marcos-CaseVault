@@ -82,26 +82,43 @@ resource "aws_iam_role_policy" "github_actions" {
           "autoscaling:*",
           "ec2:*",
           "elasticloadbalancing:*",
-          "rds:Describe*",
-          "secretsmanager:GetSecretValue",
+          "rds:*",
+          "secretsmanager:*",
           "logs:*",
           "cloudwatch:*",
           "apigateway:*",
-          "apigatewayv2:*"
+          "apigatewayv2:*",
+          "iam:GetRole",
+          "iam:GetPolicy",
+          "iam:GetOpenIDConnectProvider",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:GetRolePolicy",
+          "iam:PassRole",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:UpdateRole",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:CreatePolicy",
+          "iam:DeletePolicy",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole"
         ]
         Resource = "*"
       },
       {
         Effect = "Allow"
         Action = [
-          "s3:ListBucket",
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
+          "s3:*"
         ]
         Resource = [
           "arn:aws:s3:::${var.project_name}-terraform-state",
           "arn:aws:s3:::${var.project_name}-terraform-state/*",
+          "arn:aws:s3:::${var.project_name}-static-*",
+          "arn:aws:s3:::${var.project_name}-static-*/*",
           aws_s3_bucket.deployment.arn,
           "${aws_s3_bucket.deployment.arn}/*"
         ]
@@ -109,20 +126,9 @@ resource "aws_iam_role_policy" "github_actions" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem"
+          "dynamodb:*"
         ]
         Resource = "arn:aws:dynamodb:${var.region}:*:table/${var.project_name}-terraform-locks"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "iam:PassRole"
-        ]
-        Resource = [
-          aws_iam_role.django_app.arn
-        ]
       }
     ]
   })
