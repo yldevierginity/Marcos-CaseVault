@@ -1,5 +1,5 @@
 variable "project_name" {
-  default = "amixtra-workshop"
+  default = "casevault"
 }
 
 variable "region" {
