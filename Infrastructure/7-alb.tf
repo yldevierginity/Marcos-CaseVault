@@ -68,7 +68,3 @@ resource "aws_lb_listener" "web" {
     target_group_arn = aws_lb_target_group.web.arn
   }
 }
-
-output "alb_dns_name" {
-  value = aws_lb.web.dns_name
-}

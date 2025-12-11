@@ -1,6 +1,7 @@
 resource "random_password" "db_password" {
-  length  = 16
-  special = true
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 resource "aws_secretsmanager_secret" "db_credentials" {
@@ -32,13 +33,6 @@ resource "aws_security_group" "rds" {
   name        = "${var.project_name}-sg-rds"
   vpc_id      = module.vpc.vpc_id
 
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web.id, aws_security_group.bastion.id]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -51,12 +45,30 @@ resource "aws_security_group" "rds" {
   }
 }
 
+resource "aws_security_group_rule" "rds_from_web" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = aws_security_group.web.id
+}
+
+resource "aws_security_group_rule" "rds_from_bastion" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = aws_security_group.bastion.id
+}
+
 resource "aws_db_instance" "postgres" {
   identifier              = "${var.project_name}-db"
   allocated_storage       = 20
   storage_type            = "gp3"
   engine                  = "postgres"
-  engine_version          = "16.3"
+  engine_version          = "16.11"
   instance_class          = "db.t3.micro"
   db_name                 = "casevault_db"
   username                = "casevault_admin"
