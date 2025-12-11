@@ -90,8 +90,6 @@ resource "aws_iam_role_policy" "github_actions" {
           "apigatewayv2:*",
           "iam:GetRole",
           "iam:GetPolicy",
-          "iam:GetPolicyVersion",
-          "iam:GetInstanceProfile",
           "iam:GetOpenIDConnectProvider",
           "iam:ListRolePolicies",
           "iam:ListAttachedRolePolicies",
@@ -106,10 +104,6 @@ resource "aws_iam_role_policy" "github_actions" {
           "iam:DeletePolicy",
           "iam:AttachRolePolicy",
           "iam:DetachRolePolicy",
-          "iam:CreateInstanceProfile",
-          "iam:DeleteInstanceProfile",
-          "iam:AddRoleToInstanceProfile",
-          "iam:RemoveRoleFromInstanceProfile",
           "iam:TagRole",
           "iam:UntagRole"
         ]
