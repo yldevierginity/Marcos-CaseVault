@@ -59,8 +59,3 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   }
   alarm_actions       = [aws_autoscaling_policy.scale_out.arn]
 }
-
-output "asg_name" {
-  value       = aws_autoscaling_group.web.name
-  description = "Auto Scaling Group name for deployments"
-}
