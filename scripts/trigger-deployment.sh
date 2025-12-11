@@ -17,6 +17,28 @@ LT_NAME=$(aws autoscaling describe-auto-scaling-groups \
 
 echo "🔧 Using launch template: $LT_NAME"
 
+# Check for existing instance refresh
+EXISTING_REFRESH=$(aws autoscaling describe-instance-refreshes \
+  --auto-scaling-group-name "$ASG_NAME" \
+  --max-records 1 \
+  --query 'InstanceRefreshes[0].Status' \
+  --output text 2>/dev/null || echo "None")
+
+if [ "$EXISTING_REFRESH" == "InProgress" ] || [ "$EXISTING_REFRESH" == "Pending" ]; then
+  echo "⚠️  Found existing instance refresh in progress, cancelling..."
+  REFRESH_ID=$(aws autoscaling describe-instance-refreshes \
+    --auto-scaling-group-name "$ASG_NAME" \
+    --max-records 1 \
+    --query 'InstanceRefreshes[0].InstanceRefreshId' \
+    --output text)
+  
+  aws autoscaling cancel-instance-refresh \
+    --auto-scaling-group-name "$ASG_NAME" || true
+  
+  echo "⏳ Waiting for cancellation to complete..."
+  sleep 10
+fi
+
 # Start instance refresh for rolling deployment
 REFRESH_ID=$(aws autoscaling start-instance-refresh \
   --auto-scaling-group-name "$ASG_NAME" \
