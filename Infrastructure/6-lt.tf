@@ -164,7 +164,21 @@ cd backend
 pip3.11 install --upgrade pip
 pip3.11 install -r requirements.txt gunicorn
 
-# Create environment file
+# Export environment variables
+export DEBUG=False
+export SECRET_KEY=$SECRET_KEY
+export DB_HOST=$DB_HOST
+export DB_USER=$DB_USER
+export DB_PASSWORD=$DB_PASS
+export DB_NAME=$DB_NAME
+export DB_PORT=5432
+export USE_S3=True
+export AWS_STORAGE_BUCKET_NAME=${local.static_bucket_name}
+export AWS_S3_REGION_NAME=${var.region}
+export ALLOWED_HOSTS=${aws_lb.web.dns_name},localhost
+export CORS_ALLOWED_ORIGINS=${aws_apigatewayv2_stage.prod.invoke_url}
+
+# Create environment file for systemd
 cat > .env <<EOT
 DEBUG=False
 SECRET_KEY=$SECRET_KEY
