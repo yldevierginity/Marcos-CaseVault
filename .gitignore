@@ -75,3 +75,7 @@ coverage/
 .tmp/
 *.tsbuildinfo
 INFRASTRUCTURE_CHANGES.md
+
+# Deployment artifacts
+deployment.zip
+deployment.tar.gz
