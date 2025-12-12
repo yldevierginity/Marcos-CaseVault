@@ -36,7 +36,21 @@ if [ "$EXISTING_REFRESH" == "InProgress" ] || [ "$EXISTING_REFRESH" == "Pending"
     --auto-scaling-group-name "$ASG_NAME" || true
   
   echo "⏳ Waiting for cancellation to complete..."
-  sleep 10
+  for i in {1..30}; do
+    STATUS=$(aws autoscaling describe-instance-refreshes \
+      --auto-scaling-group-name "$ASG_NAME" \
+      --max-records 1 \
+      --query 'InstanceRefreshes[0].Status' \
+      --output text)
+    
+    if [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Successful" ]; then
+      echo "✅ Previous refresh completed with status: $STATUS"
+      break
+    fi
+    
+    echo "   Status: $STATUS, waiting... ($i/30)"
+    sleep 5
+  done
 fi
 
 # Start instance refresh for rolling deployment
