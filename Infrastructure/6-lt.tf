@@ -156,7 +156,7 @@ if [ -n "$LATEST_DEPLOYMENT" ]; then
   cd backend
 else
   echo "📦 Cloning from Git repository"
-  git clone https://github.com/acidburn-code/Marcos-CaseVault.git .
+  git clone https://github.com/yldevierginity/Marcos-CaseVault.git .
   cd backend
 fi
 
@@ -177,7 +177,7 @@ USE_S3=True
 AWS_STORAGE_BUCKET_NAME=${local.static_bucket_name}
 AWS_S3_REGION_NAME=${var.region}
 ALLOWED_HOSTS=${aws_lb.web.dns_name},localhost
-CORS_ALLOWED_ORIGINS=https://your-cloudfront-domain.cloudfront.net
+CORS_ALLOWED_ORIGINS=${aws_apigatewayv2_stage.prod.invoke_url}
 EOT
 
 # Run Django setup
