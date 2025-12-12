@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, UserPlus, Users, Briefcase, Edit, Trash2, X, Plus } from "lucide-react";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
@@ -49,9 +50,8 @@ interface DashboardProps {
 }
 
 export function Dashboard({ clients, cases, onNavigateToAddClient, onClientUpdate, onCaseUpdate }: DashboardProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [addingCaseForClient, setAddingCaseForClient] = useState<Client | null>(null);
   const [isAddCaseDialogOpen, setIsAddCaseDialogOpen] = useState(false);
 
@@ -112,51 +112,6 @@ export function Dashboard({ clients, cases, onNavigateToAddClient, onClientUpdat
       }
     } catch (error) {
       toast.error('Failed to add case');
-    }
-  };
-
-  const handleEditClient = (client: Client) => {
-    setEditingClient(client);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleUpdateClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingClient) return;
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    const updatedClient = {
-      firstName: formData.get('firstName') as string,
-      middleName: formData.get('middleName') as string,
-      lastName: formData.get('lastName') as string,
-      email: formData.get('email') as string,
-      phoneNumber: formData.get('phoneNumber') as string,
-      civilStatus: formData.get('civilStatus') as string,
-      dateOfBirth: formData.get('dateOfBirth') as string,
-      address: {
-        street: formData.get('street') as string,
-        city: formData.get('city') as string,
-        state: formData.get('state') as string,
-        zip: formData.get('zip') as string,
-      },
-      opposingParties: formData.get('opposingParties') as string,
-      notes: formData.get('notes') as string,
-    };
-
-    try {
-      const result = await apiService.updateClient(editingClient.clientId, updatedClient);
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Client updated successfully');
-        setIsEditDialogOpen(false);
-        setEditingClient(null);
-        onClientUpdate?.();
-      }
-    } catch (error) {
-      toast.error('Failed to update client');
     }
   };
 
@@ -302,7 +257,7 @@ export function Dashboard({ clients, cases, onNavigateToAddClient, onClientUpdat
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditClient(client)}
+                          onClick={() => navigate(`/edit-client/${client.clientId}`)}
                           title="Edit Client"
                         >
                           <Edit className="w-4 h-4" />
@@ -399,153 +354,6 @@ export function Dashboard({ clients, cases, onNavigateToAddClient, onClientUpdat
           );
         })}
       </div>
-
-      {/* Edit Client Modal */}
-      {isEditDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold">Edit Client</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {editingClient && (
-                <form onSubmit={handleUpdateClient} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="firstName" className="text-sm font-medium mb-2 block">First Name</Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        defaultValue={editingClient.firstName}
-                        required
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="middleName" className="text-sm font-medium mb-2 block">Middle Name</Label>
-                      <Input
-                        id="middleName"
-                        name="middleName"
-                        defaultValue={editingClient.middleName}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName" className="text-sm font-medium mb-2 block">Surname</Label>
-                      <Input
-                        id="lastName"
-                        name="lastName"
-                        defaultValue={editingClient.lastName}
-                        required
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dateOfBirth" className="text-sm font-medium mb-2 block">Date of Birth</Label>
-                      <Input
-                        id="dateOfBirth"
-                        name="dateOfBirth"
-                        type="date"
-                        defaultValue={editingClient.dateOfBirth}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="civilStatus" className="text-sm font-medium mb-2 block">Civil Status</Label>
-                      <Input
-                        id="civilStatus"
-                        name="civilStatus"
-                        defaultValue={editingClient.civilStatus}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phoneNumber" className="text-sm font-medium mb-2 block">Phone Number</Label>
-                      <Input
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        defaultValue={editingClient.phoneNumber}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="street" className="text-sm font-medium mb-2 block">Street</Label>
-                      <Input
-                        id="street"
-                        name="street"
-                        defaultValue={editingClient.address.street}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="city" className="text-sm font-medium mb-2 block">City</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        defaultValue={editingClient.address.city}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="state" className="text-sm font-medium mb-2 block">State</Label>
-                      <Input
-                        id="state"
-                        name="state"
-                        defaultValue={editingClient.address.state}
-                        className="h-11"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="zip" className="text-sm font-medium mb-2 block">ZIP Code</Label>
-                      <Input
-                        id="zip"
-                        name="zip"
-                        defaultValue={editingClient.address.zip}
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="opposingParties" className="text-sm font-medium mb-2 block">Opposing Party/Parties</Label>
-                    <Textarea
-                      id="opposingParties"
-                      name="opposingParties"
-                      defaultValue={editingClient.opposingParties}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="notes" className="text-sm font-medium mb-2 block">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      name="notes"
-                      defaultValue={editingClient.notes}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-
-                  <div className="flex gap-4 pt-6">
-                    <Button type="submit" className="flex-1 h-11">Update Client</Button>
-                    <Button type="button" variant="outline" className="flex-1 h-11" onClick={() => setIsEditDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add Case Modal */}
       {isAddCaseDialogOpen && (
