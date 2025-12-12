@@ -7,9 +7,14 @@ import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { NewPasswordPage } from "./components/NewPasswordPage";
 import { Dashboard } from "./components/Dashboard";
 import { CasesPage } from "./components/CasesPage";
+import { EditCasePage } from "./components/EditCasePage";
+import { HearingsPage } from "./components/HearingsPage";
+import { AddHearingPage } from "./components/AddHearingPage";
+import { EditHearingPage } from "./components/EditHearingPage";
 import { AboutPage } from "./components/AboutPage";
 import { LawyersPage } from "./components/LawyersPage";
 import { AddClientPage } from "./components/AddClientPage";
+import { EditClientPage } from "./components/EditClientPage";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { authService } from "./services/auth-service";
@@ -193,9 +198,14 @@ function AppContent() {
       
       <Route path="/" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <Dashboard clients={clients} cases={cases} onNavigateToAddClient={() => navigate("/add-client")} onClientUpdate={() => window.location.reload()} onCaseUpdate={() => window.location.reload()} />}<Toaster /></Layout></ProtectedRoute>} />
       <Route path="/cases" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}>{isLoading ? <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div> : <CasesPage cases={cases} clients={clients} onCaseUpdate={() => window.location.reload()} />}<Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/edit-case/:id" element={<ProtectedRoute><Layout currentPage="cases" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><EditCasePage /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/hearings" element={<ProtectedRoute><Layout currentPage="hearings" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><HearingsPage /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/add-hearing" element={<ProtectedRoute><Layout currentPage="hearings" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AddHearingPage /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/edit-hearing/:id" element={<ProtectedRoute><Layout currentPage="hearings" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><EditHearingPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/about" element={<ProtectedRoute><Layout currentPage="about" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AboutPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/lawyers" element={<ProtectedRoute><Layout currentPage="lawyers" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><LawyersPage /><Toaster /></Layout></ProtectedRoute>} />
       <Route path="/add-client" element={<ProtectedRoute><Layout currentPage="add-client" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><AddClientPage onAddClient={handleAddClient} onBack={() => navigate("/")} /><Toaster /></Layout></ProtectedRoute>} />
+      <Route path="/edit-client/:id" element={<ProtectedRoute><Layout currentPage="home" onNavigate={(page) => navigate(`/${page === "home" ? "" : page}`)} onLogout={handleLogout}><EditClientPage /><Toaster /></Layout></ProtectedRoute>} />
     </Routes>
   );
 }
