@@ -147,7 +147,7 @@ cd /opt/casevault
 
 # Check for deployment package from CI/CD
 DEPLOYMENT_BUCKET="${var.project_name}-deployment-artifacts"
-LATEST_DEPLOYMENT=$(aws s3 ls s3://$DEPLOYMENT_BUCKET/production/ --recursive 2>/dev/null | sort | tail -n 1 | awk '{print $4}')
+LATEST_DEPLOYMENT=$(aws s3 ls s3://$DEPLOYMENT_BUCKET/ --recursive 2>/dev/null | grep "\.zip$" | sort | tail -n 1 | awk '{print $4}')
 
 if [ -n "$LATEST_DEPLOYMENT" ]; then
   echo "📦 Downloading deployment from S3: $LATEST_DEPLOYMENT"
