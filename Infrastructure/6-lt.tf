@@ -121,7 +121,6 @@ resource "aws_launch_template" "web" {
 
   user_data = base64encode(<<-EOF
 #!/bin/bash
-set -e
 exec > >(tee /var/log/user-data.log)
 exec 2>&1
 
@@ -148,22 +147,22 @@ cd /opt/casevault
 
 # Check for deployment package from CI/CD
 DEPLOYMENT_BUCKET="${var.project_name}-deployment-artifacts"
-LATEST_DEPLOYMENT=$(aws s3 ls s3://$DEPLOYMENT_BUCKET/production/ --recursive | sort | tail -n 1 | awk '{print $4}')
+LATEST_DEPLOYMENT=$(aws s3 ls s3://$DEPLOYMENT_BUCKET/production/ --recursive 2>/dev/null | sort | tail -n 1 | awk '{print $4}')
 
 if [ -n "$LATEST_DEPLOYMENT" ]; then
   echo "📦 Downloading deployment from S3: $LATEST_DEPLOYMENT"
   aws s3 cp s3://$DEPLOYMENT_BUCKET/$LATEST_DEPLOYMENT deployment.zip
-  unzip -q deployment.zip -d backend
-  cd backend
+  unzip -q deployment.zip
 else
   echo "📦 Cloning from Git repository"
-  git clone https://github.com/YOUR-GITHUB-USERNAME/Marcos-CaseVault.git .
-  cd backend
+  git clone https://github.com/yldevierginity/Marcos-CaseVault.git .
 fi
+
+cd backend
 
 # Install Python dependencies
 pip3.11 install --upgrade pip
-pip3.11 install -r requirements.txt
+pip3.11 install -r requirements.txt gunicorn
 
 # Create environment file
 cat > .env <<EOT
@@ -178,7 +177,7 @@ USE_S3=True
 AWS_STORAGE_BUCKET_NAME=${local.static_bucket_name}
 AWS_S3_REGION_NAME=${var.region}
 ALLOWED_HOSTS=${aws_lb.web.dns_name},localhost
-CORS_ALLOWED_ORIGINS=https://your-cloudfront-domain.cloudfront.net
+CORS_ALLOWED_ORIGINS=${aws_apigatewayv2_stage.prod.invoke_url}
 EOT
 
 # Run Django setup
@@ -209,6 +208,9 @@ EOT
 systemctl daemon-reload
 systemctl enable gunicorn
 systemctl start gunicorn
+
+# Wait for service to be ready
+sleep 10
 
 echo "✅ Django setup completed successfully!"
 EOF
