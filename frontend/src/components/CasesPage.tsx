@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, FileText, Edit, Trash2, X } from "lucide-react";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
@@ -48,10 +49,9 @@ interface CasesPageProps {
 }
 
 export function CasesPage({ cases, clients, onCaseUpdate }: CasesPageProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [editingCase, setEditingCase] = useState<Case | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -74,46 +74,6 @@ export function CasesPage({ cases, clients, onCaseUpdate }: CasesPageProps) {
     const client = getClient(clientId);
     if (!client) return "Unknown Client";
     return `${client.firstName}${client.middleName ? " " + client.middleName : ""} ${client.lastName}`;
-  };
-
-  const handleEditCase = (case_: Case) => {
-    setEditingCase(case_);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleUpdateCase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCase) return;
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    // Get status from select element directly
-    const statusSelect = form.querySelector('select[name="status"]') as HTMLSelectElement;
-    const status = statusSelect ? statusSelect.value : editingCase.status;
-
-    const updatedCase = {
-      clientId: editingCase.clientId,
-      caseTitle: formData.get('caseTitle') as string,
-      caseType: formData.get('caseType') as string,
-      status: status,
-      description: formData.get('description') as string,
-      lawyerAssigned: formData.get('lawyerAssigned') as string,
-    };
-
-    try {
-      const result = await apiService.updateCase(editingCase.caseId, updatedCase);
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Case updated successfully');
-        setIsEditDialogOpen(false);
-        setEditingCase(null);
-        onCaseUpdate?.();
-      }
-    } catch (error) {
-      toast.error('Failed to update case');
-    }
   };
 
   const handleDeleteCase = async (caseId: string) => {
@@ -220,7 +180,7 @@ export function CasesPage({ cases, clients, onCaseUpdate }: CasesPageProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditCase(case_)}
+                          onClick={() => navigate(`/edit-case/${case_.caseId}`)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -266,81 +226,6 @@ export function CasesPage({ cases, clients, onCaseUpdate }: CasesPageProps) {
           )}
         </TabsContent>
       </Tabs>
-
-      {isEditDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Edit Case</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {editingCase && (
-                <form onSubmit={handleUpdateCase} className="space-y-4">
-                  <div>
-                    <Label htmlFor="caseTitle">Case Title</Label>
-                    <Input
-                      id="caseTitle"
-                      name="caseTitle"
-                      defaultValue={editingCase.caseTitle}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="caseType">Case Type</Label>
-                    <Input
-                      id="caseType"
-                      name="caseType"
-                      defaultValue={editingCase.caseType}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <select 
-                      name="status" 
-                      defaultValue={editingCase.status}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="active">Active</option>
-                      <option value="pending">Pending</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="lawyerAssigned">Lawyer Assigned</Label>
-                    <Input
-                      id="lawyerAssigned"
-                      name="lawyerAssigned"
-                      defaultValue={editingCase.lawyerAssigned}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      defaultValue={editingCase.description}
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button type="submit" className="flex-1">Update Case</Button>
-                    <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
