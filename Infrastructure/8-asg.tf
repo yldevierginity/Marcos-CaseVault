@@ -10,7 +10,7 @@ resource "aws_autoscaling_group" "web" {
   }
   target_group_arns         = [aws_lb_target_group.web.arn]
   health_check_type         = "ELB"
-  health_check_grace_period = 300
+  health_check_grace_period = 600
   
   instance_refresh {
     strategy = "Rolling"
