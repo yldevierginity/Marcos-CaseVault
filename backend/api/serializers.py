@@ -43,14 +43,34 @@ class CaseSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class HearingSerializer(serializers.ModelSerializer):
-    case_title = serializers.SerializerMethodField()
+    case_title = serializers.SerializerMethodField(read_only=True)
+    client_name = serializers.SerializerMethodField(read_only=True)
+    case_id = serializers.IntegerField(write_only=True, required=False)
     
     class Meta:
         model = Hearing
         fields = '__all__'
+        extra_kwargs = {
+            'case': {'read_only': True}
+        }
     
     def get_case_title(self, obj):
         return obj.case.case_title
+    
+    def get_client_name(self, obj):
+        return f"{obj.case.client.first_name} {obj.case.client.last_name}"
+    
+    def create(self, validated_data):
+        case_id = validated_data.pop('case_id')
+        case = Case.objects.get(case_id=case_id)
+        validated_data['case'] = case
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        if 'case_id' in validated_data:
+            case_id = validated_data.pop('case_id')
+            instance.case = Case.objects.get(case_id=case_id)
+        return super().update(instance, validated_data)
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
