@@ -308,7 +308,7 @@ export function AddClientPage({ onAddClient, onBack }: AddClientPageProps) {
                 <Input
                   id="phoneNumber"
                   type="tel"
-                  placeholder="(555) 123-4567"
+                  placeholder="+63 912 345 6789"
                   value={clientData.phoneNumber}
                   onChange={(e) =>
                     setClientData({ ...clientData, phoneNumber: e.target.value })
@@ -340,7 +340,7 @@ export function AddClientPage({ onAddClient, onBack }: AddClientPageProps) {
                 <Label htmlFor="street">Street</Label>
                 <Input
                   id="street"
-                  placeholder="123 Main Street"
+                  placeholder="Kimintang Street, Purok 4, Barangay Mintal"
                   value={clientData.street}
                   onChange={(e) =>
                     setClientData({ ...clientData, street: e.target.value })
@@ -352,7 +352,7 @@ export function AddClientPage({ onAddClient, onBack }: AddClientPageProps) {
                   <Label htmlFor="city">City</Label>
                   <Input
                     id="city"
-                    placeholder="New York"
+                    placeholder="Davao City"
                     value={clientData.city}
                     onChange={(e) =>
                       setClientData({ ...clientData, city: e.target.value })
@@ -363,7 +363,7 @@ export function AddClientPage({ onAddClient, onBack }: AddClientPageProps) {
                   <Label htmlFor="state">State</Label>
                   <Input
                     id="state"
-                    placeholder="NY"
+                    placeholder="Davao Del Sur"
                     value={clientData.state}
                     onChange={(e) =>
                       setClientData({ ...clientData, state: e.target.value })
@@ -374,7 +374,7 @@ export function AddClientPage({ onAddClient, onBack }: AddClientPageProps) {
                   <Label htmlFor="zip">ZIP Code</Label>
                   <Input
                     id="zip"
-                    placeholder="10001"
+                    placeholder="8000"
                     value={clientData.zip}
                     onChange={(e) =>
                       setClientData({ ...clientData, zip: e.target.value })
