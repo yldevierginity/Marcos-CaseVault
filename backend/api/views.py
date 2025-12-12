@@ -112,9 +112,49 @@ class HearingListView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        hearings = Hearing.objects.all()
+        hearings = Hearing.objects.all().order_by('-hearing_date')
         serializer = HearingSerializer(hearings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = HearingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class HearingDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self, hearing_id):
+        try:
+            return Hearing.objects.get(hearing_id=hearing_id)
+        except Hearing.DoesNotExist:
+            return None
+    
+    def get(self, request, hearing_id):
+        hearing = self.get_object(hearing_id)
+        if not hearing:
+            return Response({'error': 'Hearing not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = HearingSerializer(hearing)
+        return Response(serializer.data)
+    
+    def put(self, request, hearing_id):
+        hearing = self.get_object(hearing_id)
+        if not hearing:
+            return Response({'error': 'Hearing not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = HearingSerializer(hearing, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, hearing_id):
+        hearing = self.get_object(hearing_id)
+        if not hearing:
+            return Response({'error': 'Hearing not found'}, status=status.HTTP_404_NOT_FOUND)
+        hearing.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
