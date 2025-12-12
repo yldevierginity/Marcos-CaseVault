@@ -358,5 +358,47 @@ export const apiService = {
         error: error.message || 'Failed to delete case'
       };
     }
+  },
+
+  async getHearings() {
+    const response = await fetch(`${API_BASE_URL}/hearings/`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch hearings');
+    return response.json();
+  },
+
+  async createHearing(hearingData: any) {
+    const response = await fetch(`${API_BASE_URL}/hearings/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(hearingData),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || error.message || 'Failed to create hearing');
+    }
+    return response.json();
+  },
+
+  async updateHearing(hearingId: number, hearingData: any) {
+    const response = await fetch(`${API_BASE_URL}/hearings/${hearingId}/`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(hearingData),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || error.message || 'Failed to update hearing');
+    }
+    return response.json();
+  },
+
+  async deleteHearing(hearingId: number) {
+    const response = await fetch(`${API_BASE_URL}/hearings/${hearingId}/`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete hearing');
   }
 };
