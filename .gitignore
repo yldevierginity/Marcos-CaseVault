@@ -75,3 +75,11 @@ coverage/
 .tmp/
 *.tsbuildinfo
 INFRASTRUCTURE_CHANGES.md
+
+# === Terraform ===
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
