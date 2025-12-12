@@ -45,7 +45,7 @@ resource "aws_lb_target_group" "web" {
   health_check {
     path                = "/api/health/"
     protocol            = "HTTP"
-    matcher             = "200"
+    matcher             = "200-399"
     port                = 8000
     interval            = 30
     timeout             = 5
