@@ -30,22 +30,28 @@ Thumbs.db
 .idea/
 *.iml
 
-# === AWS Lambda / Serverless ===
-.serverless/
-.aws-sam/
-.venv/
+# === Python / Django ===
 __pycache__/
-*.pyc
-*.zip
-package-lock.json
-yarn.lock
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+backend/venv/
+backend/.venv/
 
-# Deployment & temp
-*.tmp
+# Django
 *.log
-coverage/
-.tmp/
-*.tsbuildinfo
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
 
 # === PostgreSQL ===
 *.sql
@@ -54,13 +60,17 @@ coverage/
 *.pgdump
 pgdata/
 pg_backup/
-db/*.db
-
-# Migration tools (Prisma, Alembic, Sequelize, etc.)
-migrations/*-tmp/
-migrations/*-backup/
 
 # === OS specific ===
 ehthumbs.db
 Icon?
+Thumbs.db
 
+# === Project specific ===
+CREDENTIALS.md
+test_api.py
+*.tmp
+*.log
+coverage/
+.tmp/
+*.tsbuildinfo
