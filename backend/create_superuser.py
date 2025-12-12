@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 import os
 import django
-from django.contrib.auth.models import User
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'casevault.settings')
 django.setup()
 
-if not User.objects.filter(username='admin@example.com').exists():
-    User.objects.create_superuser('admin@example.com', 'admin@example.com', 'admin123')
-    print('Superuser created: admin@example.com / admin123')
+from django.contrib.auth.models import User
+
+if not User.objects.filter(username='admin@nmmlaw.com').exists():
+    User.objects.create_superuser('admin@nmmlaw.com', 'admin@nmmlaw.com', 'admin123')
+    print('Superuser created: admin@nmmlaw.com / admin123')
 else:
     print('Superuser already exists')
 

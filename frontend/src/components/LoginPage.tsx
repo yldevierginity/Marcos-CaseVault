@@ -47,11 +47,15 @@ export function LoginPage({ onLogin, onForgotPassword, onNewPasswordRequired }: 
       } else {
         sessionStorage.setItem("loginError", "Incorrect username or password.");
         setError("Incorrect username or password.");
+        setEmail("");
+        setPassword("");
       }
     }).catch(() => {
       setIsLoading(false);
       sessionStorage.setItem("loginError", "Incorrect username or password.");
       setError("Incorrect username or password.");
+      setEmail("");
+      setPassword("");
     });
   };
 

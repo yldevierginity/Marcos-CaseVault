@@ -22,6 +22,9 @@ ALTER USER casevault_user CREATEDB;
 \q
 EOF
 
+# Grant schema permissions
+sudo -u postgres psql -d casevault_db -c "GRANT ALL ON SCHEMA public TO casevault_user;"
+
 echo "PostgreSQL setup complete!"
 echo "Database: casevault_db"
 echo "User: casevault_user"

@@ -612,12 +612,10 @@ export function Dashboard({ clients, cases, onNavigateToAddClient, onClientUpdat
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Select lawyer</option>
-                      <option value="Atty. Neyra Marcos Mendez">Atty. Neyra Marcos Mendez</option>
-                      <option value="Atty. John Smith">Atty. John Smith</option>
-                      <option value="Atty. Maria Garcia">Atty. Maria Garcia</option>
-                      <option value="Atty. Robert Johnson">Atty. Robert Johnson</option>
-                      <option value="Atty. Sarah Wilson">Atty. Sarah Wilson</option>
-                      <option value="Other">Other</option>
+                      <option value="Atty. Prince Arthur M. Neyra">Atty. Prince Arthur M. Neyra</option>
+                      <option value="Atty. Cloydie Mark A. Marcos">Atty. Cloydie Mark A. Marcos</option>
+                      <option value="Atty. Ryan E. Mendez">Atty. Ryan E. Mendez</option>
+                      <option value="Atty. Deolanar C. Jungco">Atty. Deolanar C. Jungco</option>
                     </select>
                   </div>
                   <div>

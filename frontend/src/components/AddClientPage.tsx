@@ -52,10 +52,10 @@ interface AddClientPageProps {
 }
 
 const lawyers = [
-  "Sarah Mitchell",
-  "Michael Chen",
-  "Jennifer Lopez",
-  "Robert Johnson",
+  "Atty. Prince Arthur M. Neyra",
+  "Atty. Cloydie Mark A. Marcos",
+  "Atty. Ryan E. Mendez",
+  "Atty. Deolanar C. Jungco",
 ];
 
 const caseTypes = [
