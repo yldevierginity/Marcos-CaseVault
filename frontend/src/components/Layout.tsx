@@ -9,7 +9,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutProps) {
-  const navItems = ["Home", "Cases", "About", "Lawyers"];
+  const navItems = ["Home", "Cases", "Hearings", "About", "Lawyers"];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
