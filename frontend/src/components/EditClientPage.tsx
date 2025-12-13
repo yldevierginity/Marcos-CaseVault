@@ -6,14 +6,24 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { toast } from "sonner";
 import { apiService } from "../services/api-service";
+
+const civilStatuses = [
+  "Single",
+  "Married",
+  "Divorced",
+  "Widowed",
+  "Separated",
+];
 
 export function EditClientPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
+  const [civilStatus, setCivilStatus] = useState("");
 
   useEffect(() => {
     fetchClient();
@@ -29,6 +39,7 @@ export function EditClientPage() {
       });
       const data = await response.json();
       setClient(data);
+      setCivilStatus(data.civil_status || "");
       setLoading(false);
     } catch (error) {
       toast.error("Failed to fetch client");
@@ -42,18 +53,20 @@ export function EditClientPage() {
     const formData = new FormData(form);
 
     const updatedClient = {
-      first_name: formData.get('firstName'),
-      middle_name: formData.get('middleName'),
-      last_name: formData.get('lastName'),
-      date_of_birth: formData.get('dateOfBirth'),
-      civil_status: formData.get('civilStatus'),
-      phone_number: formData.get('phoneNumber'),
+      firstName: formData.get('firstName'),
+      middleName: formData.get('middleName'),
+      lastName: formData.get('lastName'),
+      dateOfBirth: formData.get('dateOfBirth'),
+      civilStatus: civilStatus,
+      phoneNumber: formData.get('phoneNumber'),
       email: formData.get('email'),
-      street: formData.get('street'),
-      city: formData.get('city'),
-      state: formData.get('state'),
-      zip_code: formData.get('zip'),
-      opposing_parties: formData.get('opposingParties'),
+      address: {
+        street: formData.get('street'),
+        city: formData.get('city'),
+        state: formData.get('state'),
+        zip: formData.get('zip'),
+      },
+      opposingParties: formData.get('opposingParties'),
       notes: formData.get('notes'),
     };
 
@@ -102,7 +115,18 @@ export function EditClientPage() {
               </div>
               <div>
                 <Label htmlFor="civilStatus">Civil Status</Label>
-                <Input id="civilStatus" name="civilStatus" defaultValue={client.civil_status} />
+                <Select value={civilStatus} onValueChange={setCivilStatus}>
+                  <SelectTrigger id="civilStatus">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {civilStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="phoneNumber">Phone Number</Label>
